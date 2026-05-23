@@ -1,0 +1,151 @@
+{
+  "rooms": [
+    {
+      "id": "F1-101",
+      "name": "Room 101",
+      "displayName": "Eusoff Block C Room 101",
+      "floor": 1,
+      "searchTerms": ["101", "room 101", "f1-101"]
+    },
+    {
+      "id": "F1-102",
+      "name": "Room 102",
+      "displayName": "Eusoff Block C Room 102",
+      "floor": 1,
+      "searchTerms": ["102", "room 102", "f1-102"]
+    },
+    {
+      "id": "F1-103",
+      "name": "Room 103",
+      "displayName": "Eusoff Block C Room 103",
+      "floor": 1,
+      "searchTerms": ["103", "room 103", "f1-103"]
+    },
+    {
+      "id": "F1-104",
+      "name": "Room 104",
+      "displayName": "Eusoff Block C Room 104",
+      "floor": 1,
+      "searchTerms": ["104", "room 104", "f1-104"]
+    },
+    {
+      "id": "F1-105",
+      "name": "Room 105",
+      "displayName": "Eusoff Block C Room 105",
+      "floor": 1,
+      "searchTerms": ["105", "room 105", "f1-105"]
+    },
+    {
+      "id": "F1-COMMON",
+      "name": "Common Area Floor 1",
+      "displayName": "Eusoff Block C Common Area (Floor 1)",
+      "floor": 1,
+      "searchTerms": ["common", "common area", "lounge", "floor 1 common"]
+    },
+    {
+      "id": "F2-201",
+      "name": "Room 201",
+      "displayName": "Eusoff Block C Room 201",
+      "floor": 2,
+      "searchTerms": ["201", "room 201", "f2-201"]
+    },
+    {
+      "id": "F2-202",
+      "name": "Room 202",
+      "displayName": "Eusoff Block C Room 202",
+      "floor": 2,
+      "searchTerms": ["202", "room 202", "f2-202"]
+    },
+    {
+      "id": "F2-203",
+      "name": "Room 203",
+      "displayName": "Eusoff Block C Room 203",
+      "floor": 2,
+      "searchTerms": ["203", "room 203", "f2-203"]
+    },
+    {
+      "id": "F2-204",
+      "name": "Room 204",
+      "displayName": "Eusoff Block C Room 204",
+      "floor": 2,
+      "searchTerms": ["204", "room 204", "f2-204"]
+    },
+    {
+      "id": "F2-COMMON",
+      "name": "Common Area Floor 2",
+      "displayName": "Eusoff Block C Common Area (Floor 2)",
+      "floor": 2,
+      "searchTerms": ["common", "common area", "lounge", "floor 2 common"]
+    },
+    {
+      "id": "F3-301",
+      "name": "Room 301",
+      "displayName": "Eusoff Block C Room 301",
+      "floor": 3,
+      "searchTerms": ["301", "room 301", "f3-301"]
+    },
+    {
+      "id": "F3-302",
+      "name": "Room 302",
+      "displayName": "Eusoff Block C Room 302",
+      "floor": 3,
+      "searchTerms": ["302", "room 302", "f3-302"]
+    },
+    {
+      "id": "F3-303",
+      "name": "Room 303",
+      "displayName": "Eusoff Block C Room 303",
+      "floor": 3,
+      "searchTerms": ["303", "room 303", "f3-303"]
+    },
+    {
+      "id": "F3-304",
+      "name": "Room 304",
+      "displayName": "Eusoff Block C Room 304",
+      "floor": 3,
+      "searchTerms": ["304", "room 304", "f3-304"]
+    },
+    {
+      "id": "F3-COMMON",
+      "name": "Common Area Floor 3",
+      "displayName": "Eusoff Block C Common Area (Floor 3)",
+      "floor": 3,
+      "searchTerms": ["common", "common area", "lounge", "floor 3 common"]
+    },
+    {
+      "id": "F4-401",
+      "name": "Room 401",
+      "displayName": "Eusoff Block C Room 401",
+      "floor": 4,
+      "searchTerms": ["401", "room 401", "f4-401"]
+    },
+    {
+      "id": "F4-402",
+      "name": "Room 402",
+      "displayName": "Eusoff Block C Room 402",
+      "floor": 4,
+      "searchTerms": ["402", "room 402", "f4-402"]
+    },
+    {
+      "id": "F4-403",
+      "name": "Room 403",
+      "displayName": "Eusoff Block C Room 403",
+      "floor": 4,
+      "searchTerms": ["403", "room 403", "f4-403"]
+    },
+    {
+      "id": "F4-404",
+      "name": "Room 404",
+      "displayName": "Eusoff Block C Room 404",
+      "floor": 4,
+      "searchTerms": ["404", "room 404", "f4-404"]
+    },
+    {
+      "id": "F4-COMMON",
+      "name": "Common Area Floor 4",
+      "displayName": "Eusoff Block C Common Area (Floor 4)",
+      "floor": 4,
+      "searchTerms": ["common", "common area", "lounge", "floor 4 common"]
+    }
+  ]
+}
