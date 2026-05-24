@@ -202,7 +202,7 @@ Main responsibility:
 - integration
 - GitHub/Vercel setup
 
-### Tuấn
+### Tuan
 
 Main responsibility:
 
