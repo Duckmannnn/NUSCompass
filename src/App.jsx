@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react';
-
-import { graph, roomsData } from './data/blockCData';
+import { blockCLayout, graph, roomsData } from './data/blockCData';
 
 import FloorMap from './components/FloorMap';
 import FloorSelector from './components/FloorSelector';
@@ -95,12 +94,14 @@ export default function App() {
         </aside>
 
         <section className="main-panel">
-          <FloorMap
-            graph={graph}
-            route={route}
-            currentFloor={currentFloor}
-            selectedNodeId={selectedNodeId}
-          />
+        <FloorMap
+          graph={graph}
+          route={route}
+          currentFloor={currentFloor}
+          selectedNodeId={selectedNodeId}
+          selectedRoom={selectedRoom}
+          blockCLayout={blockCLayout}
+        />
           <StepPanel graph={graph} route={route} selectedRoom={selectedRoom} />
           <div className="info-card">
             <h2>Route output</h2>
