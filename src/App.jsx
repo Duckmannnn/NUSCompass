@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
 
-import graph from './data/graph.json';
-import roomsData from './data/rooms.json';
+import { graph, roomsData } from './data/blockCData';
 
 import FloorMap from './components/FloorMap';
 import FloorSelector from './components/FloorSelector';
@@ -51,6 +50,10 @@ export default function App() {
   }
 
   const selectedNodeId = selectedRoom ? getRoomNodeId(selectedRoom) : null;
+
+  console.log('Block C rooms:', roomsData.length);
+  console.log('Block C nodes:', graph.nodes.length);
+  console.log('Block C edges:', graph.edges.length);
 
   return (
     <main className="app-shell">
