@@ -25,7 +25,6 @@ function pointsToString(points) {
 function getRouteSegments(route, graph, currentFloor) {
   const nodeMap = getNodeMap(graph.nodes ?? []);
   const edgeMap = getEdgeMap(graph.edges ?? []);
-
   const segments = [];
 
   for (let i = 0; i < route.length - 1; i += 1) {
@@ -48,7 +47,6 @@ function getRouteSegments(route, graph, currentFloor) {
     }
 
     const edge = edgeMap.get(getEdgeKey(fromId, toId));
-
     const path = edge?.path ?? [
       { x: fromNode.x, y: fromNode.y },
       { x: toNode.x, y: toNode.y },
@@ -114,6 +112,10 @@ function getRoomClassName(room, selectedNodeId) {
 function DoorTick({ point, side }) {
   const length = 13;
 
+  if (!point) {
+    return null;
+  }
+
   if (side === 'top') {
     return (
       <line
@@ -164,7 +166,6 @@ function DoorTick({ point, side }) {
 function StairShape({ stair }) {
   const stepCount = 4;
   const padding = 9;
-  const stepGap = stair.height / (stepCount + 1);
 
   return (
     <g>
@@ -178,7 +179,22 @@ function StairShape({ stair }) {
       />
 
       {Array.from({ length: stepCount }).map((_, index) => {
-        const y = stair.y + padding + index * stepGap;
+        if (stair.orientation === 'vertical') {
+          const x = stair.x + padding + index * ((stair.width - padding * 2) / (stepCount - 1));
+
+          return (
+            <line
+              key={`${stair.id}-step-${index}`}
+              className="map-stair-step"
+              x1={x}
+              y1={stair.y + padding}
+              x2={x}
+              y2={stair.y + stair.height - padding}
+            />
+          );
+        }
+
+        const y = stair.y + padding + index * ((stair.height - padding * 2) / (stepCount - 1));
 
         return (
           <line
@@ -200,11 +216,40 @@ function Marker({ node, type, label }) {
     return null;
   }
 
+  const radius = type === 'destination' ? 13 : type === 'stair' ? 12 : 15;
+  const labelX = node.x + 20;
+  const labelY = node.y - 8;
+
   return (
-    <g>
-      <circle className={`map-marker ${type}`} cx={node.x} cy={node.y} r="16" />
-      <text className="map-marker-label" x={node.x + 22} y={node.y - 8}>
+    <g className={`map-marker-group ${type}`}>
+      <circle className={`map-marker ${type}`} cx={node.x} cy={node.y} r={radius} />
+      <text className="map-marker-label" x={labelX} y={labelY}>
         {label}
+      </text>
+    </g>
+  );
+}
+
+function SpecialBlock({ item }) {
+  return (
+    <g key={item.id}>
+      <rect
+        className="map-special"
+        x={item.x}
+        y={item.y}
+        width={item.width}
+        height={item.height}
+        rx="7"
+      />
+
+      {item.door && <DoorTick point={item.door} side={item.doorSide} />}
+
+      <text
+        className="special-label"
+        x={item.x + item.width / 2}
+        y={item.y + item.height / 2}
+      >
+        {item.label}
       </text>
     </g>
   );
@@ -219,7 +264,6 @@ export default function FloorMap({
   blockCLayout,
 }) {
   const [showDebug, setShowDebug] = useState(false);
-
   const layout = blockCLayout?.[currentFloor];
 
   const routeSegments = useMemo(
@@ -265,10 +309,7 @@ export default function FloorMap({
         <div>
           <p className="section-kicker">Map</p>
           <h2>Floor {currentFloor} · Eusoff Block C</h2>
-          <p>
-            Redrawn indoor map. Route uses door nodes, corridor spines, and
-            edge paths.
-          </p>
+          <p>Redrawn indoor map. Route uses door nodes, corridor spines, and edge paths.</p>
         </div>
 
         <button
@@ -287,21 +328,11 @@ export default function FloorMap({
           role="img"
           aria-label={`Eusoff Block C floor ${currentFloor} map`}
         >
-          <defs>
-            <marker
-              id="route-arrow"
-              markerWidth="12"
-              markerHeight="12"
-              refX="10"
-              refY="6"
-              orient="auto"
-              markerUnits="strokeWidth"
-            >
-              <path className="route-arrow" d="M 0 0 L 12 6 L 0 12 z" />
-            </marker>
-          </defs>
-
-          <rect className="map-paper" width="1280" height="720" />
+          <rect
+            className="map-paper"
+            width={layout.viewBox.width}
+            height={layout.viewBox.height}
+          />
 
           <g className="corridor-layer">
             {layout.corridorPaths.map((path, index) => (
@@ -310,6 +341,14 @@ export default function FloorMap({
           </g>
 
           <path className="map-wall" d={layout.outerWallPath} />
+
+          {layout.specials?.length > 0 && (
+            <g className="special-layer">
+              {layout.specials.map((item) => (
+                <SpecialBlock key={item.id} item={item} />
+              ))}
+            </g>
+          )}
 
           <g className="room-layer">
             {layout.rooms.map((room) => (
@@ -347,9 +386,7 @@ export default function FloorMap({
                   rx="7"
                 />
 
-                {facility.door && (
-                  <DoorTick point={facility.door} side={facility.doorSide} />
-                )}
+                {facility.door && <DoorTick point={facility.door} side={facility.doorSide} />}
 
                 <text
                   className="facility-label"
@@ -435,15 +472,8 @@ export default function FloorMap({
 
           {routePoints.length > 1 && (
             <g className="route-layer">
-              <polyline
-                className="route-halo"
-                points={pointsToString(routePoints)}
-              />
-              <polyline
-                className="route-line"
-                markerEnd="url(#route-arrow)"
-                points={pointsToString(routePoints)}
-              />
+              <polyline className="route-halo" points={pointsToString(routePoints)} />
+              <polyline className="route-line" points={pointsToString(routePoints)} />
 
               {routePoints.slice(1, -1).map((point, index) => (
                 <circle
@@ -467,7 +497,7 @@ export default function FloorMap({
             <Marker
               node={destinationNode}
               type="destination"
-              label={selectedRoom?.id ?? selectedRoom?.name ?? 'Destination'}
+              label={selectedRoom?.name ?? selectedRoom?.id ?? 'Destination'}
             />
           )}
         </svg>
@@ -489,10 +519,7 @@ export default function FloorMap({
 
         <div className="map-floor-mini">
           {[1, 2, 3, 4].map((floor) => (
-            <span
-              key={floor}
-              className={String(floor) === String(currentFloor) ? 'active' : ''}
-            >
+            <span key={floor} className={String(floor) === String(currentFloor) ? 'active' : ''}>
               F{floor}
             </span>
           ))}
