@@ -111,6 +111,56 @@ function getRoomClassName(room, selectedNodeId) {
   return isTargetRoom ? 'map-room target-room' : 'map-room';
 }
 
+function DoorTick({ point, side }) {
+  const length = 13;
+
+  if (side === 'top') {
+    return (
+      <line
+        className="door-tick"
+        x1={point.x}
+        y1={point.y}
+        x2={point.x}
+        y2={point.y + length}
+      />
+    );
+  }
+
+  if (side === 'bottom') {
+    return (
+      <line
+        className="door-tick"
+        x1={point.x}
+        y1={point.y}
+        x2={point.x}
+        y2={point.y - length}
+      />
+    );
+  }
+
+  if (side === 'left') {
+    return (
+      <line
+        className="door-tick"
+        x1={point.x}
+        y1={point.y}
+        x2={point.x + length}
+        y2={point.y}
+      />
+    );
+  }
+
+  return (
+    <line
+      className="door-tick"
+      x1={point.x}
+      y1={point.y}
+      x2={point.x - length}
+      y2={point.y}
+    />
+  );
+}
+
 function StairShape({ stair }) {
   const stepCount = 4;
   const padding = 9;
@@ -272,13 +322,7 @@ export default function FloorMap({
                   height={room.height}
                 />
 
-                <line
-                  className="door-tick"
-                  x1={room.door.x}
-                  y1={room.door.y}
-                  x2={room.door.x}
-                  y2={room.door.y + (room.door.y <= room.y ? 10 : -10)}
-                />
+                <DoorTick point={room.door} side={room.doorSide} />
 
                 <text
                   className="room-label"
@@ -302,6 +346,10 @@ export default function FloorMap({
                   height={facility.height}
                   rx="7"
                 />
+
+                {facility.door && (
+                  <DoorTick point={facility.door} side={facility.doorSide} />
+                )}
 
                 <text
                   className="facility-label"

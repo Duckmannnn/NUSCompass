@@ -3,7 +3,18 @@ const VIEWBOX = {
   height: 720,
 };
 
-const ROOM_GROUPS = {
+const SPINE = {
+  leftY: 468,
+  lowerY: 542,
+  connectorX: 640,
+  topX: 855,
+  topBaseY: 390,
+  topMidY: 225,
+  stairRightX: 1080,
+  stairRightY: 542,
+};
+
+const ROOM_SETS = {
   1: {
     lowerLeft: ['C101', 'C103', 'C105', 'C107', 'C109'],
     midLeft: ['C102', 'C104', 'C106', 'C108'],
@@ -11,10 +22,10 @@ const ROOM_GROUPS = {
     topLeft: ['C119', 'C118', 'C117', 'C115', 'C113'],
     topRight: ['C116', 'C114', 'C112'],
     facilities: [
-      { id: 'F1-LAUNDRY', label: 'Laundry', x: 650, y: 575, width: 120, height: 76 },
-      { id: 'F1-DRYING-YARD', label: 'Drying Yard', x: 770, y: 575, width: 150, height: 76 },
-      { id: 'F1-TOILET', label: 'Toilet', x: 815, y: 382, width: 138, height: 78 },
-      { id: 'F1-EW-ROOM', label: 'EW Room', x: 815, y: 315, width: 138, height: 58 },
+      block('F1-LAUNDRY', 'Laundry', 900, 575, 120, 76, 'top'),
+      block('F1-DRYING-YARD', 'Drying Yard', 1020, 575, 130, 76, 'top'),
+      block('F1-TOILET', 'Toilet', 815, 365, 145, 80, 'bottom'),
+      block('F1-EW-ROOM', 'EW Room', 815, 300, 145, 62, 'bottom'),
     ],
   },
 
@@ -25,9 +36,9 @@ const ROOM_GROUPS = {
     topLeft: ['C221', 'C220', 'C219', 'C217', 'C215'],
     topRight: ['C218', 'C216', 'C214'],
     facilities: [
-      { id: 'F2-KITCHEN', label: 'Kitchen', x: 660, y: 382, width: 120, height: 78 },
-      { id: 'F2-TOILET', label: 'Toilet', x: 815, y: 382, width: 138, height: 78 },
-      { id: 'F2-ROOF', label: 'Roof', x: 900, y: 105, width: 190, height: 110 },
+      block('F2-KITCHEN', 'Kitchen', 660, 365, 140, 80, 'bottom'),
+      block('F2-TOILET', 'Toilet', 830, 365, 145, 80, 'bottom'),
+      block('F2-ROOF', 'Roof', 900, 85, 190, 110, 'left'),
     ],
   },
 
@@ -38,8 +49,8 @@ const ROOM_GROUPS = {
     topLeft: ['C323', 'C321', 'C319', 'C317', 'C315'],
     topRight: ['C322', 'C320', 'C318', 'C316', 'C314'],
     facilities: [
-      { id: 'F3-LOUNGE', label: 'Lounge', x: 660, y: 382, width: 120, height: 78 },
-      { id: 'F3-TOILET', label: 'Toilet', x: 815, y: 382, width: 138, height: 78 },
+      block('F3-LOUNGE', 'Lounge', 660, 365, 140, 80, 'bottom'),
+      block('F3-TOILET', 'Toilet', 830, 365, 145, 80, 'bottom'),
     ],
   },
 
@@ -50,25 +61,23 @@ const ROOM_GROUPS = {
     topLeft: ['C423', 'C421', 'C419', 'C417', 'C415'],
     topRight: ['C424', 'C422', 'C420', 'C418', 'C416', 'C414'],
     facilities: [
-      { id: 'F4-BALCONY', label: 'Balcony', x: 660, y: 382, width: 120, height: 78 },
-      { id: 'F4-TOILET', label: 'Toilet', x: 815, y: 382, width: 138, height: 78 },
+      block('F4-BALCONY', 'Balcony', 660, 365, 140, 80, 'bottom'),
+      block('F4-TOILET', 'Toilet', 830, 365, 145, 80, 'bottom'),
     ],
   },
 };
 
-function makeRoom(id, floor, x, y, width, height, doorSide = 'top') {
+function block(id, label, x, y, width, height, doorSide) {
   const door = getDoorPoint(x, y, width, height, doorSide);
 
   return {
     id,
-    label: id,
-    floor,
+    label,
     x,
     y,
     width,
     height,
-    type: 'room',
-    nodeId: `F${floor}-${id}-DOOR`,
+    doorSide,
     door,
   };
 }
@@ -89,77 +98,139 @@ function getDoorPoint(x, y, width, height, side) {
   return { x: x + width, y: y + height / 2 };
 }
 
+function room(id, floor, x, y, width, height, doorSide, zone) {
+  const door = getDoorPoint(x, y, width, height, doorSide);
+
+  return {
+    id,
+    label: id,
+    floor,
+    x,
+    y,
+    width,
+    height,
+    doorSide,
+    door,
+    zone,
+    type: 'room',
+    nodeId: `F${floor}-${id}-DOOR`,
+  };
+}
+
 function makeFloorRooms(floor) {
-  const groups = ROOM_GROUPS[floor];
+  const set = ROOM_SETS[floor];
   const rooms = [];
 
-  groups.lowerLeft.forEach((id, index) => {
-    rooms.push(makeRoom(id, floor, 200 + index * 76, 500, 76, 72, 'top'));
+  set.midLeft.forEach((id, index) => {
+    rooms.push(
+      room(id, floor, 170 + index * 112, 340, 112, 86, 'bottom', 'mid-left')
+    );
   });
 
-  groups.midLeft.forEach((id, index) => {
-    rooms.push(makeRoom(id, floor, 225 + index * 86, 370, 86, 72, 'bottom'));
+  set.lowerLeft.forEach((id, index) => {
+    rooms.push(
+      room(id, floor, 170 + index * 92, 500, 92, 76, 'top', 'lower-left')
+    );
   });
 
-  groups.lowerRight.forEach((id, index) => {
-    rooms.push(makeRoom(id, floor, 650 + index * 120, 575, 120, 76, 'top'));
+  set.lowerRight.forEach((id, index) => {
+    rooms.push(
+      room(id, floor, 650 + index * 125, 575, 125, 76, 'top', 'lower-right')
+    );
   });
 
-  groups.topLeft.forEach((id, index) => {
-    rooms.push(makeRoom(id, floor, 715, 105 + index * 52, 94, 52, 'right'));
+  set.topLeft.forEach((id, index) => {
+    rooms.push(
+      room(id, floor, 710, 105 + index * 55, 96, 55, 'right', 'top-left')
+    );
   });
 
-  groups.topRight.forEach((id, index) => {
-    rooms.push(makeRoom(id, floor, 900, 105 + index * 52, 94, 52, 'left'));
+  const topRightHeight = set.topRight.length >= 6 ? 48 : 55;
+  const topRightStartY = set.topRight.length >= 6 ? 78 : 105;
+
+  set.topRight.forEach((id, index) => {
+    rooms.push(
+      room(
+        id,
+        floor,
+        910,
+        topRightStartY + index * topRightHeight,
+        96,
+        topRightHeight,
+        'left',
+        'top-right'
+      )
+    );
   });
 
   return rooms;
 }
 
 function makeFloorLayout(floor) {
+  const rooms = makeFloorRooms(floor);
+  const rawFacilities = ROOM_SETS[floor].facilities;
+
+  const facilities = rawFacilities.map((facility) => ({
+    ...facility,
+    floor,
+    type: 'facility',
+  }));
+
   return {
     floor,
     viewBox: VIEWBOX,
 
+    // Corridor is drawn as clean straight strips.
     corridorPaths: [
-      'M190 445 H625 V360 H705 V82 H920 V360 H1035 V470 H1130 V575 H640 V500 H190 Z',
-      'M640 500 H1130 V575 H640 Z',
-      'M190 445 H625 V500 H190 Z',
+      // Left horizontal corridor between mid-left row and lower-left row.
+      'M140 426 H640 V500 H140 Z',
+
+      // Lower horizontal corridor above lower-right row and toward stair.
+      'M640 500 H1145 V585 H640 Z',
+
+      // Connector between left corridor and lower corridor.
+      'M600 426 H680 V585 H600 Z',
+
+      // Central connector toward the upper vertical corridor.
+      'M640 360 H900 V426 H640 Z',
+
+      // Vertical Temasek corridor between top-left and top-right rooms.
+      'M806 78 H910 V365 H806 Z',
     ],
 
+    // Outer wall is only a clean visual boundary.
     outerWallPath:
-      'M170 500 H640 V575 H1130 V470 H1035 V360 H920 V182 H1050 V78 H705 V360 H625 V445 H170 Z',
+      'M140 500 H640 V585 H1145 V470 H1035 V365 H910 V182 H1050 V78 H706 V365 H640 V426 H140 Z',
 
-    rooms: makeFloorRooms(floor),
-
-    facilities: ROOM_GROUPS[floor].facilities,
+    rooms,
+    facilities,
 
     stairs: [
       {
         id: `F${floor}-STAIR-RIGHT`,
         label: 'Right Stair',
-        x: 1015,
-        y: 475,
-        width: 84,
-        height: 54,
+        x: 1045,
+        y: 460,
+        width: 92,
+        height: 62,
         orientation: 'horizontal',
-        node: { x: 1057, y: 502 },
+        node: { x: SPINE.stairRightX, y: SPINE.stairRightY },
       },
       {
         id: `F${floor}-STAIR-TOP`,
         label: 'Top Stair',
-        x: 735,
-        y: 35,
-        width: 84,
-        height: 46,
+        x: 745,
+        y: 34,
+        width: 92,
+        height: 48,
         orientation: 'horizontal',
-        node: { x: 777, y: 82 },
+        node: { x: 790, y: 82 },
       },
     ],
   };
 }
 
-function node(id, label, floor, x, y, type, extra = {}) {
+function makeNode(id, label, floor, x, y, type, extra = {}) {
   return {
     id,
     label,
@@ -171,7 +242,7 @@ function node(id, label, floor, x, y, type, extra = {}) {
   };
 }
 
-function edge(from, to, distance, path = null, type = 'walk') {
+function makeEdge(from, to, distance, path = null, type = 'walk') {
   return {
     from,
     to,
@@ -181,13 +252,208 @@ function edge(from, to, distance, path = null, type = 'walk') {
   };
 }
 
-function makeBidirectionalEdge(from, to, distance, path, type = 'walk') {
-  const reversePath = path ? [...path].reverse() : null;
+function makeTwoWayEdge(from, to, distance, path, type = 'walk') {
+  return [
+    makeEdge(from, to, distance, path, type),
+    makeEdge(to, from, distance, [...path].reverse(), type),
+  ];
+}
+
+function pointDistance(a, b) {
+  return Math.round(Math.hypot(a.x - b.x, a.y - b.y));
+}
+
+function pathDistance(path) {
+  let total = 0;
+
+  for (let i = 0; i < path.length - 1; i += 1) {
+    total += pointDistance(path[i], path[i + 1]);
+  }
+
+  return Math.round(total);
+}
+
+function getAnchorForBlock(blockItem) {
+  if (blockItem.zone === 'mid-left') {
+    return {
+      x: blockItem.door.x,
+      y: SPINE.leftY,
+    };
+  }
+
+  if (blockItem.zone === 'lower-left') {
+    return {
+      x: blockItem.door.x,
+      y: SPINE.leftY,
+    };
+  }
+
+  if (blockItem.zone === 'lower-right') {
+    return {
+      x: blockItem.door.x,
+      y: SPINE.lowerY,
+    };
+  }
+
+  if (blockItem.zone === 'top-left') {
+    return {
+      x: SPINE.topX,
+      y: blockItem.door.y,
+    };
+  }
+
+  if (blockItem.zone === 'top-right') {
+    return {
+      x: SPINE.topX,
+      y: blockItem.door.y,
+    };
+  }
+
+  // Facilities like Lounge / Toilet / Kitchen are room-like blocks.
+  if (blockItem.doorSide === 'bottom') {
+    return {
+      x: blockItem.door.x,
+      y: SPINE.leftY,
+    };
+  }
+
+  if (blockItem.doorSide === 'top') {
+    return {
+      x: blockItem.door.x,
+      y: SPINE.lowerY,
+    };
+  }
+
+  return {
+    x: SPINE.topX,
+    y: blockItem.door.y,
+  };
+}
+
+function getSpineNodeForBlock(blockItem, floor) {
+  if (blockItem.zone === 'mid-left' || blockItem.zone === 'lower-left') {
+    return `F${floor}-CORRIDOR-LEFT`;
+  }
+
+  if (blockItem.zone === 'lower-right') {
+    return `F${floor}-CORRIDOR-LOWER`;
+  }
+
+  if (blockItem.zone === 'top-left' || blockItem.zone === 'top-right') {
+    return `F${floor}-CORRIDOR-TOP`;
+  }
+
+  // Facilities attached to left / central corridor.
+  if (blockItem.doorSide === 'bottom') {
+    return `F${floor}-CORRIDOR-LEFT`;
+  }
+
+  if (blockItem.doorSide === 'top') {
+    return `F${floor}-CORRIDOR-LOWER`;
+  }
+
+  return `F${floor}-CORRIDOR-TOP`;
+}
+
+function getSpinePoint(spineNodeId, floor) {
+  const points = {
+    [`F${floor}-CORRIDOR-RIGHT`]: {
+      x: SPINE.stairRightX,
+      y: SPINE.lowerY,
+    },
+    [`F${floor}-CORRIDOR-LOWER`]: {
+      x: SPINE.connectorX,
+      y: SPINE.lowerY,
+    },
+    [`F${floor}-CORRIDOR-LEFT`]: {
+      x: SPINE.connectorX,
+      y: SPINE.leftY,
+    },
+    [`F${floor}-CORRIDOR-TOP-BASE`]: {
+      x: SPINE.topX,
+      y: SPINE.topBaseY,
+    },
+    [`F${floor}-CORRIDOR-TOP`]: {
+      x: SPINE.topX,
+      y: SPINE.topMidY,
+    },
+  };
+
+  return points[spineNodeId];
+}
+
+function getPathFromAnchorToSpine(anchor, spineNodeId, floor) {
+  const spine = getSpinePoint(spineNodeId, floor);
+
+  if (!spine) {
+    return [anchor];
+  }
+
+  if (spineNodeId.endsWith('CORRIDOR-LEFT')) {
+    return [
+      { x: anchor.x, y: anchor.y },
+      { x: spine.x, y: spine.y },
+    ];
+  }
+
+  if (spineNodeId.endsWith('CORRIDOR-LOWER')) {
+    return [
+      { x: anchor.x, y: anchor.y },
+      { x: spine.x, y: spine.y },
+    ];
+  }
+
+  if (spineNodeId.endsWith('CORRIDOR-TOP')) {
+    return [
+      { x: anchor.x, y: anchor.y },
+      { x: SPINE.topX, y: anchor.y },
+      { x: SPINE.topX, y: spine.y },
+    ];
+  }
 
   return [
-    edge(from, to, distance, path, type),
-    edge(to, from, distance, reversePath, type),
+    { x: anchor.x, y: anchor.y },
+    { x: spine.x, y: spine.y },
   ];
+}
+
+function makeBlockGraphNodesAndEdges(floor, blockItem, nodes, edges) {
+  const doorNodeId =
+    blockItem.nodeId ?? `F${floor}-${blockItem.id.replace(`F${floor}-`, '')}-DOOR`;
+  const anchorNodeId = `${doorNodeId.replace('-DOOR', '')}-ANCHOR`;
+
+  const anchor = getAnchorForBlock(blockItem);
+  const spineNodeId = getSpineNodeForBlock(blockItem, floor);
+  const anchorToSpinePath = getPathFromAnchorToSpine(anchor, spineNodeId, floor);
+
+  nodes.push(
+    makeNode(doorNodeId, `${blockItem.label} Door`, floor, blockItem.door.x, blockItem.door.y, 'door', {
+      roomId: blockItem.id,
+    }),
+    makeNode(anchorNodeId, `${blockItem.label} Anchor`, floor, anchor.x, anchor.y, 'corridor-anchor', {
+      roomId: blockItem.id,
+    })
+  );
+
+  edges.push(
+    ...makeTwoWayEdge(
+      doorNodeId,
+      anchorNodeId,
+      pointDistance(blockItem.door, anchor),
+      [
+        { x: blockItem.door.x, y: blockItem.door.y },
+        { x: anchor.x, y: anchor.y },
+      ],
+      'door-access'
+    ),
+    ...makeTwoWayEdge(
+      anchorNodeId,
+      spineNodeId,
+      pathDistance(anchorToSpinePath),
+      anchorToSpinePath,
+      'walk'
+    )
+  );
 }
 
 function makeFloorGraph(floor, layout) {
@@ -197,249 +463,110 @@ function makeFloorGraph(floor, layout) {
   const stairRightId = `F${floor}-STAIR-RIGHT`;
   const corridorRightId = `F${floor}-CORRIDOR-RIGHT`;
   const corridorLowerId = `F${floor}-CORRIDOR-LOWER`;
-  const corridorLeftTurnId = `F${floor}-CORRIDOR-LEFT-TURN`;
+  const corridorLeftId = `F${floor}-CORRIDOR-LEFT`;
   const corridorTopBaseId = `F${floor}-CORRIDOR-TOP-BASE`;
-  const corridorTopMidId = `F${floor}-CORRIDOR-TOP-MID`;
+  const corridorTopId = `F${floor}-CORRIDOR-TOP`;
 
   nodes.push(
-    node(stairRightId, 'Right Stair', floor, 1057, 502, 'stair'),
-    node(corridorRightId, 'Right corridor', floor, 1057, 542, 'corridor'),
-    node(corridorLowerId, 'Lower corridor', floor, 620, 542, 'corridor'),
-    node(corridorLeftTurnId, 'Left connector', floor, 620, 452, 'junction'),
-    node(corridorTopBaseId, 'Top corridor base', floor, 855, 360, 'junction'),
-    node(corridorTopMidId, 'Top corridor', floor, 855, 225, 'corridor')
+    makeNode(stairRightId, 'Right Stair', floor, SPINE.stairRightX, SPINE.stairRightY, 'stair'),
+    makeNode(corridorRightId, 'Right corridor', floor, SPINE.stairRightX, SPINE.lowerY, 'corridor'),
+    makeNode(corridorLowerId, 'Lower corridor', floor, SPINE.connectorX, SPINE.lowerY, 'corridor'),
+    makeNode(corridorLeftId, 'Left corridor', floor, SPINE.connectorX, SPINE.leftY, 'corridor'),
+    makeNode(corridorTopBaseId, 'Top corridor base', floor, SPINE.topX, SPINE.topBaseY, 'junction'),
+    makeNode(corridorTopId, 'Top corridor', floor, SPINE.topX, SPINE.topMidY, 'corridor')
   );
 
   edges.push(
-    ...makeBidirectionalEdge(
+    ...makeTwoWayEdge(
       stairRightId,
       corridorRightId,
-      40,
+      1,
       [
-        { x: 1057, y: 502 },
-        { x: 1057, y: 542 },
+        { x: SPINE.stairRightX, y: SPINE.stairRightY },
+        { x: SPINE.stairRightX, y: SPINE.lowerY },
       ],
       'stair-access'
     ),
 
-    ...makeBidirectionalEdge(
+    ...makeTwoWayEdge(
       corridorRightId,
       corridorLowerId,
-      437,
+      SPINE.stairRightX - SPINE.connectorX,
       [
-        { x: 1057, y: 542 },
-        { x: 620, y: 542 },
+        { x: SPINE.stairRightX, y: SPINE.lowerY },
+        { x: SPINE.connectorX, y: SPINE.lowerY },
       ]
     ),
 
-    ...makeBidirectionalEdge(
+    ...makeTwoWayEdge(
       corridorLowerId,
-      corridorLeftTurnId,
-      90,
+      corridorLeftId,
+      SPINE.lowerY - SPINE.leftY,
       [
-        { x: 620, y: 542 },
-        { x: 620, y: 452 },
+        { x: SPINE.connectorX, y: SPINE.lowerY },
+        { x: SPINE.connectorX, y: SPINE.leftY },
       ]
     ),
 
-    ...makeBidirectionalEdge(
-      corridorLeftTurnId,
+    ...makeTwoWayEdge(
+      corridorLeftId,
       corridorTopBaseId,
-      325,
+      pathDistance([
+        { x: SPINE.connectorX, y: SPINE.leftY },
+        { x: SPINE.connectorX, y: SPINE.topBaseY },
+        { x: SPINE.topX, y: SPINE.topBaseY },
+      ]),
       [
-        { x: 620, y: 452 },
-        { x: 620, y: 380 },
-        { x: 855, y: 380 },
-        { x: 855, y: 360 },
+        { x: SPINE.connectorX, y: SPINE.leftY },
+        { x: SPINE.connectorX, y: SPINE.topBaseY },
+        { x: SPINE.topX, y: SPINE.topBaseY },
       ]
     ),
 
-    ...makeBidirectionalEdge(
+    ...makeTwoWayEdge(
       corridorTopBaseId,
-      corridorTopMidId,
-      135,
+      corridorTopId,
+      SPINE.topBaseY - SPINE.topMidY,
       [
-        { x: 855, y: 360 },
-        { x: 855, y: 225 },
+        { x: SPINE.topX, y: SPINE.topBaseY },
+        { x: SPINE.topX, y: SPINE.topMidY },
       ]
     )
   );
 
-  layout.rooms.forEach((room) => {
-    const doorNodeId = room.nodeId;
-    const anchorNodeId = `F${floor}-${room.id}-ANCHOR`;
+  layout.rooms.forEach((roomItem) => {
+    makeBlockGraphNodesAndEdges(floor, roomItem, nodes, edges);
+  });
 
-    const anchor = getAnchorForRoom(room);
-
-    nodes.push(
-      node(doorNodeId, `${room.id} Door`, floor, room.door.x, room.door.y, 'door', {
-        roomId: room.id,
-      }),
-      node(anchorNodeId, `${room.id} Anchor`, floor, anchor.x, anchor.y, 'corridor-anchor', {
-        roomId: room.id,
-      })
-    );
-
-    edges.push(
-      ...makeBidirectionalEdge(
-        doorNodeId,
-        anchorNodeId,
-        Math.round(distanceBetween(room.door, anchor)),
-        [
-          { x: room.door.x, y: room.door.y },
-          { x: anchor.x, y: anchor.y },
-        ],
-        'door-access'
-      )
-    );
-
-    const spineNodeId = getSpineNodeForRoom(room, floor);
-    const pathToSpine = getPathFromAnchorToSpine(anchor, spineNodeId, floor);
-
-    edges.push(
-      ...makeBidirectionalEdge(
-        anchorNodeId,
-        spineNodeId,
-        getPathDistance(pathToSpine),
-        pathToSpine
-      )
-    );
+  // Facilities also get nodes, but they are not added to roomsData search yet.
+  // This keeps the map model ready for future search like Toilet / Lounge.
+  layout.facilities.forEach((facility) => {
+    makeBlockGraphNodesAndEdges(floor, facility, nodes, edges);
   });
 
   return { nodes, edges };
 }
 
-function getAnchorForRoom(room) {
-  const idNumber = Number(room.id.slice(1));
-
-  // Mid-left rooms like C302/C304/C306/C308.
-  if (room.x >= 220 && room.x < 600 && room.y < 460) {
-    return {
-      x: room.door.x,
-      y: 452,
-    };
-  }
-
-  // Lower-left rooms like C301/C303/C305.
-  if (room.x < 620 && room.y >= 500) {
-    return {
-      x: room.door.x,
-      y: 490,
-    };
-  }
-
-  // Lower-right rooms like C310-C313.
-  if (room.x >= 640 && room.y >= 560) {
-    return {
-      x: room.door.x,
-      y: 542,
-    };
-  }
-
-  // Top-left cluster.
-  if (room.x < 850 && room.y < 370) {
-    return {
-      x: 855,
-      y: room.door.y,
-    };
-  }
-
-  // Top-right cluster.
-  return {
-    x: 855,
-    y: room.door.y,
-  };
-}
-
-function getSpineNodeForRoom(room, floor) {
-  // Mid-left room row connects to left turn.
-  if (room.x >= 220 && room.x < 600 && room.y < 460) {
-    return `F${floor}-CORRIDOR-LEFT-TURN`;
-  }
-
-  // Lower-left rooms also go through left turn / lower corridor.
-  if (room.x < 620 && room.y >= 500) {
-    return `F${floor}-CORRIDOR-LEFT-TURN`;
-  }
-
-  // Lower-right rooms connect to lower corridor.
-  if (room.x >= 640 && room.y >= 560) {
-    return `F${floor}-CORRIDOR-LOWER`;
-  }
-
-  // Top cluster connects to top corridor.
-  return `F${floor}-CORRIDOR-TOP-MID`;
-}
-
-function getPathFromAnchorToSpine(anchor, spineNodeId, floor) {
-  const spinePoints = {
-    [`F${floor}-CORRIDOR-LEFT-TURN`]: { x: 620, y: 452 },
-    [`F${floor}-CORRIDOR-LOWER`]: { x: 620, y: 542 },
-    [`F${floor}-CORRIDOR-TOP-MID`]: { x: 855, y: 225 },
-  };
-
-  const spine = spinePoints[spineNodeId];
-
-  if (!spine) {
-    return [anchor];
-  }
-
-  if (spineNodeId.endsWith('LEFT-TURN')) {
-    return [
-      { x: anchor.x, y: anchor.y },
-      { x: spine.x, y: anchor.y },
-      { x: spine.x, y: spine.y },
-    ];
-  }
-
-  if (spineNodeId.endsWith('LOWER')) {
-    return [
-      { x: anchor.x, y: anchor.y },
-      { x: spine.x, y: spine.y },
-    ];
-  }
-
-  return [
-    { x: anchor.x, y: anchor.y },
-    { x: 855, y: anchor.y },
-    { x: 855, y: spine.y },
-  ];
-}
-
-function distanceBetween(a, b) {
-  return Math.round(Math.hypot(a.x - b.x, a.y - b.y));
-}
-
-function getPathDistance(path) {
-  let total = 0;
-
-  for (let i = 0; i < path.length - 1; i += 1) {
-    total += distanceBetween(path[i], path[i + 1]);
-  }
-
-  return Math.round(total);
-}
-
 function makeRoomsData(layouts) {
   return Object.values(layouts)
     .flatMap((layout) => layout.rooms)
-    .map((room) => ({
-      id: room.id,
-      displayName: `Eusoff Block C Room ${room.id}`,
-      name: room.id,
+    .map((roomItem) => ({
+      id: roomItem.id,
+      displayName: `Eusoff Block C Room ${roomItem.id}`,
+      name: roomItem.id,
       building: 'Eusoff Block C',
-      floor: room.floor,
+      floor: roomItem.floor,
       type: 'room',
-      nodeId: room.nodeId,
+      nodeId: roomItem.nodeId,
       displayPoint: {
-        x: room.x + room.width / 2,
-        y: room.y + room.height / 2,
+        x: roomItem.x + roomItem.width / 2,
+        y: roomItem.y + roomItem.height / 2,
       },
     }));
 }
 
 function makeBlockCData() {
-  const layouts = {
+  const blockCLayout = {
     1: makeFloorLayout(1),
     2: makeFloorLayout(2),
     3: makeFloorLayout(3),
@@ -452,24 +579,24 @@ function makeBlockCData() {
     edges: [],
   };
 
-  Object.values(layouts).forEach((layout) => {
+  Object.values(blockCLayout).forEach((layout) => {
     const floorGraph = makeFloorGraph(layout.floor, layout);
     graph.nodes.push(...floorGraph.nodes);
     graph.edges.push(...floorGraph.edges);
   });
 
   graph.nodes.push(
-    node('F1-ENTRANCE', 'Main Entrance', 1, 1057, 610, 'entrance')
+    makeNode('F1-ENTRANCE', 'Main Entrance', 1, SPINE.stairRightX, 625, 'entrance')
   );
 
   graph.edges.push(
-    ...makeBidirectionalEdge(
+    ...makeTwoWayEdge(
       'F1-ENTRANCE',
       'F1-CORRIDOR-RIGHT',
-      68,
+      83,
       [
-        { x: 1057, y: 610 },
-        { x: 1057, y: 542 },
+        { x: SPINE.stairRightX, y: 625 },
+        { x: SPINE.stairRightX, y: SPINE.lowerY },
       ],
       'entrance'
     )
@@ -477,20 +604,15 @@ function makeBlockCData() {
 
   [1, 2, 3].forEach((floor) => {
     graph.edges.push(
-      ...makeBidirectionalEdge(
-        `F${floor}-STAIR-RIGHT`,
-        `F${floor + 1}-STAIR-RIGHT`,
-        85,
-        null,
-        'stairs'
-      )
+      makeEdge(`F${floor}-STAIR-RIGHT`, `F${floor + 1}-STAIR-RIGHT`, 85, null, 'stairs'),
+      makeEdge(`F${floor + 1}-STAIR-RIGHT`, `F${floor}-STAIR-RIGHT`, 85, null, 'stairs')
     );
   });
 
   return {
-    blockCLayout: layouts,
+    blockCLayout,
     graph,
-    roomsData: makeRoomsData(layouts),
+    roomsData: makeRoomsData(blockCLayout),
   };
 }
 
