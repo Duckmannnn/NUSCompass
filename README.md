@@ -1,36 +1,152 @@
 # NUSCompass
 
-NUSCompass is an indoor navigation web app for NUS COM1.
+NUSCompass is an indoor navigation web app for NUS spaces. The project aims to help students and visitors search for rooms and generate room-level indoor routes across campus buildings.
 
-The MVP goal is simple:
+For Milestone 1, our technical proof of concept focuses on **Eusoff Block C**. The current app allows users to choose their current location and destination, then generates an indoor route across a manually traced four-floor map using graph-based A* pathfinding.
 
-```txt
-User searches for a room
-→ app finds the room
-→ app calculates a route
-→ app draws the route on a map
-→ app shows step-by-step directions
+---
+
+## 1. Project Overview
+
+Navigating large campus buildings can be confusing, especially when users need to find specific rooms rather than just buildings. Standard map applications usually stop at outdoor navigation and do not provide detailed indoor routes through corridors, staircases, and floor transitions.
+
+NUSCompass addresses this by modelling indoor spaces as a graph of rooms, doors, corridors, and stair nodes. Users can select where they are and where they want to go, and the app computes a route through the building.
+
+The long-term goal is to build a campus indoor navigation tool that can support multiple NUS buildings and help users find rooms more quickly.
+
+---
+
+## 2. Milestone 1 Technical Proof of Concept
+
+The current proof of concept implements indoor route generation for **Eusoff Block C**.
+
+Implemented features:
+
+* Search/select current location
+* Search/select destination
+* Generate a route between two indoor locations
+* Render a four-floor Block C map
+* Show the route overlay on the map
+* Support stair transitions between floors
+* Switch between floor views
+* Show step-by-step route directions
+* Debug graph mode for inspecting routing nodes and edges
+
+The core user flow is:
+
+```text
+User chooses current location
+→ User chooses destination
+→ App finds the corresponding room nodes
+→ A* computes a route on the indoor graph
+→ FloorMap renders the route using corridor-aligned edge paths
+→ StepPanel shows route instructions
 ```
 
-## Current Status
+This demonstrates the main technical feasibility of NUSCompass: room-level indoor navigation using a graph-based model.
 
-The project currently has a working React + Vite scaffold.
+---
 
-This means:
+## 3. Features and Design of Application
 
-- `npm install` works
-- `npm run dev` works
-- `npm run build` works
-- `graph.json` and `rooms.json` already exist
-- the app can import and display data from JSON files
+### 3.1 Current Location and Destination Search
 
-Real navigation components are still under development.
+Users can search for both their current location and target destination. The current interface supports room and facility entries such as rooms, toilets, lounges, and other mapped Block C spaces.
 
-Current `App.jsx` is mainly a data-check screen, not the final app UI.
+### 3.2 Indoor Map Rendering
 
-## Tech Stack
+The app renders a custom SVG floor map for Eusoff Block C. The current map includes:
 
-```txt
+* Room blocks
+* Facility blocks
+* Corridors
+* Staircases
+* Door markers
+* Route overlay
+* Start and destination markers
+
+The map is manually traced from available floor-plan references. This is sufficient for the Milestone 1 proof of concept, and the geometry will be refined in later milestones.
+
+### 3.3 A* Pathfinding
+
+The routing system models indoor navigation as a graph:
+
+* Rooms connect to door nodes
+* Door nodes connect to corridor anchor nodes
+* Corridor anchors connect to corridor spine nodes
+* Stair nodes connect different floors
+
+The app uses A* pathfinding to compute a route between the selected start and destination nodes.
+
+### 3.4 Step-by-Step Directions
+
+After a route is generated, the app displays route steps to help users understand how to move through the building. The current directions are basic and will be improved with more natural landmark-based instructions in future milestones.
+
+---
+
+## 4. System Architecture
+
+The MVP is frontend-only and built with React + Vite.
+
+```text
+React UI
+  ├── App.jsx
+  │   ├── manages current location and destination state
+  │   ├── runs A* route calculation
+  │   └── passes route data to map and direction components
+  │
+  ├── components/
+  │   ├── FloorMap.jsx
+  │   ├── FloorSelector.jsx
+  │   ├── StepPanel.jsx
+  │   └── SearchBar.jsx
+  │
+  ├── data/
+  │   └── blockCData.js
+  │
+  ├── utils/
+  │   ├── astar.js
+  │   └── search.js
+  │
+  └── styles/
+      └── app.css
+```
+
+### Important Files
+
+#### `src/App.jsx`
+
+Main controller of the app. It stores the selected current location, selected destination, current floor, and generated route.
+
+#### `src/data/blockCData.js`
+
+Stores the manually traced Block C map data and generated routing graph. This includes room positions, facility positions, corridor paths, stair nodes, graph nodes, and graph edges.
+
+#### `src/utils/astar.js`
+
+Implements the A* pathfinding algorithm used to find a route between two graph nodes.
+
+#### `src/components/FloorMap.jsx`
+
+Renders the indoor map using SVG and draws the route overlay based on the computed route.
+
+#### `src/components/FloorSelector.jsx`
+
+Allows users to switch between floor views.
+
+#### `src/components/StepPanel.jsx`
+
+Displays step-by-step route directions.
+
+#### `src/styles/app.css`
+
+Contains global styling and the visual theme for the app.
+
+---
+
+## 5. Tech Stack
+
+```text
 Frontend:
 - React
 - Vite
@@ -38,18 +154,23 @@ Frontend:
 - CSS
 - SVG
 
-Data:
-- Static JSON files
-- No database in the current MVP
+Routing:
+- Static graph data
+- A* pathfinding
 
-Deploy:
-- GitHub
-- Vercel later
+Current MVP:
+- Frontend-only
+- No backend
+- No database
 ```
 
-## Quick Start
+The current MVP intentionally avoids backend complexity so that the team can focus on proving the core indoor navigation workflow first.
 
-Clone the repo:
+---
+
+## 6. Quick Start
+
+Clone the repository:
 
 ```bash
 git clone https://github.com/Duckmannnn/NUSCompass.git
@@ -62,27 +183,27 @@ Install dependencies:
 npm install
 ```
 
-Run local development server:
+Run the local development server:
 
 ```bash
 npm run dev
 ```
 
-Open the URL printed by Vite in the terminal.
+Open the URL printed by Vite in the terminal. It is usually:
 
-Usually it is:
-
-```txt
+```text
 http://localhost:5173
 ```
 
-If that port is busy, Vite may use another port, for example:
+If the port is busy, Vite may use another port such as:
 
-```txt
+```text
 http://localhost:5174
 ```
 
-## Build
+---
+
+## 7. Build
 
 Before pushing important changes, run:
 
@@ -92,138 +213,101 @@ npm run build
 
 If the build passes, the project is safe to commit and push.
 
-The build output goes into:
+The production build output goes into:
 
-```txt
+```text
 dist/
 ```
 
-Do not edit or commit `dist/`.
+Do not manually edit or commit `dist/`.
 
-Vercel will generate `dist/` automatically during deployment.
+---
 
-## Project Structure
+## 8. Current Limitations
 
-```txt
-NUSCompass/
-├── index.html
-├── package.json
-├── package-lock.json
-├── vite.config.js
-├── public/
-│   └── maps/
-└── src/
-    ├── main.jsx
-    ├── App.jsx
-    ├── data/
-    │   ├── graph.json
-    │   └── rooms.json
-    ├── components/
-    ├── utils/
-    └── styles/
-        └── app.css
-```
+The current proof of concept is functional but still limited:
 
-## File Responsibilities
+* The map currently supports Eusoff Block C only.
+* Floor-plan geometry is manually traced and may not be perfectly accurate yet.
+* The route instructions are basic and not fully natural-language yet.
+* There is no real-time indoor positioning.
+* There is no backend, database, or user account system.
+* The current map data needs further validation against real building measurements.
 
-```txt
-src/main.jsx
-```
+These limitations are acceptable for Milestone 1 because the main goal is to prove the technical feasibility of indoor route generation.
 
-Starts the React app and renders `App.jsx`.
+---
 
-```txt
-src/App.jsx
-```
+## 9. Development Plan
 
-Main controller of the app.
+### Milestone 1: Technical Proof of Concept
 
-Later, this file will connect:
+Completed / in progress:
 
-```txt
-SearchBar
-→ A* route calculation
-→ FloorMap
-→ StepPanel
-```
+* Set up React + Vite project
+* Set up GitHub repository and version control
+* Implement graph-based indoor routing
+* Implement A* pathfinding
+* Implement Eusoff Block C four-floor map prototype
+* Implement current location and destination search
+* Render route overlay on map
+* Add floor switching and basic route directions
 
-```txt
-src/data/graph.json
-```
+### Milestone 2: Improve Product Usability
 
-Logical map data.
+Planned:
 
-It stores:
+* Refine floor-plan accuracy
+* Improve mobile-friendly UI
+* Improve route instructions using clearer landmarks
+* Add more realistic room/facility labels
+* Improve map interaction and visual feedback
+* Add more test cases for graph correctness
 
-- floors
-- nodes
-- edges
+### Milestone 3: Expansion and Polish
 
-```txt
-src/data/rooms.json
-```
+Planned:
 
-Search data for room autocomplete.
+* Add more buildings or more complete Eusoff coverage
+* Improve data encoding workflow for future maps
+* Prepare final demo flow
+* Improve deployment and user testing
+* Polish UI for final presentation
 
-```txt
-src/components/
-```
+---
 
-UI components.
-
-Tuấn will mainly work here.
-
-```txt
-src/utils/
-```
-
-Logic/helper functions.
-
-Minh will mainly work here.
-
-```txt
-src/styles/app.css
-```
-
-Global styling.
-
-## Team Split
+## 10. Team Split
 
 ### Minh
 
-Main responsibility:
+Main responsibilities:
 
-- data structure
-- `graph.json`
-- `rooms.json`
-- A* algorithm
-- `src/utils/`
-- `src/App.jsx`
-- integration
-- GitHub/Vercel setup
+* Project setup
+* Graph data structure
+* A* pathfinding logic
+* Block C map data encoding
+* App integration
+* GitHub workflow
+* Milestone documentation
 
-### Tuan
+### Tuấn
 
-Main responsibility:
+Main responsibilities:
 
-- UI components
-- SVG map rendering
-- CSS styling
-- map assets
+* UI component review
+* Map rendering improvements
+* CSS polish
+* Testing route cases
+* Poster/video support
+* Future frontend component development
 
-Tuấn should mainly work in:
+The current MVP is still small, so responsibilities may overlap as the team iterates quickly.
 
-```txt
-src/components/
-src/styles/app.css
-public/maps/
-```
+---
 
-## Development Workflow
+## 11. Development Workflow
 
-Do not push directly to `main` unless the team has agreed.
-
-Every time before coding:
+Before coding:
 
 ```bash
 git checkout main
@@ -234,12 +318,6 @@ Create a new branch:
 
 ```bash
 git checkout -b your-branch-name
-```
-
-Example:
-
-```bash
-git checkout -b tuan-ui
 ```
 
 Before pushing:
@@ -258,35 +336,57 @@ git push -u origin your-branch-name
 
 Then open a Pull Request on GitHub.
 
-## MVP Scope
+---
+
+## 12. Milestone 1 Demo Flow
+
+Recommended demo cases:
+
+```text
+C111 → C302
+C302 → C421
+C101 → C312
+C214 → C313
+```
+
+Recommended video flow:
+
+1. Introduce the indoor navigation problem.
+2. Show the NUSCompass app.
+3. Select a current location.
+4. Select a destination.
+5. Show the generated route.
+6. Switch between floor views.
+7. Show debug graph mode briefly.
+8. Explain current limitations and next steps.
+
+---
+
+## 13. MVP Scope
 
 The current MVP is frontend-only.
 
 For now, we do not need:
 
-- backend
-- API
-- database
-- WebSocket
-- admin panel
-- login system
-- real-time user reports
+* Backend
+* API
+* Database
+* Login system
+* Admin panel
+* Real-time user reports
+* Real-time indoor positioning
 
-Those can be future improvements after the basic navigation demo works.
+These may be future improvements after the basic navigation workflow is validated.
 
-## Important Notes
+---
+
+## 14. Important Notes
 
 Do not commit:
 
-```txt
+```text
 node_modules/
 dist/
 ```
 
 These are generated automatically.
-
-Use this command to view the project tree clearly:
-
-```bash
-tree -L 3 -I "node_modules|dist|.git"
-```
