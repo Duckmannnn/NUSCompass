@@ -337,6 +337,9 @@ git push -u origin your-branch-name
 Then open a Pull Request on GitHub.
 
 ---
+## Project Log
+
+The Milestone 1 project log is available here: [PROJECT_LOG.md](./PROJECT_LOG.md).
 
 ## 12. Milestone 1 Demo Flow
 
