@@ -1,10 +1,10 @@
 // src/screens/ExploreScreen.jsx
 import { useNavigation } from '../context/NavigationContext';
+import { blockCLayout, roomsData } from '../data/blockCData';
 import FloorSelectorCard from '../components/cards/FloorSelectorCard';
 import RoomDetailCard from '../components/cards/RoomDetailCard';
 
 export default function ExploreScreen() {
-  // Get state and actions from Context
   const { 
     selectedBlock, 
     currentFloor, 
@@ -13,41 +13,63 @@ export default function ExploreScreen() {
     navigateTo 
   } = useNavigation();
 
-  // Triggered when user clicks on a room on the map
-  const handleRoomClick = (roomId) => {
-    selectRoom(roomId);
-    // Context will automatically set activeCard = 'room_detail'
+  const layout = blockCLayout[currentFloor];
+
+  const handleRoomClick = (room) => {
+    selectRoom(room);
   };
 
-  // Triggered when user clicks "Back" button
   const handleBack = () => {
     navigateTo('home');
   };
 
+  if (!layout) {
+    return <div>No layout data for floor {currentFloor}</div>;
+  }
+
   return (
-    <div style={{ position: 'relative', width: '100%', height: '100vh' }}>
-      {/* TODO: Tuan - Replace this placeholder with MapCanvas component */}
-      {/* MapCanvas will render SVG map, handle zoom/pan, and room clicks */}
-      <div style={{ 
-        width: '100%', 
-        height: '100%', 
-        backgroundColor: '#f3f4f6',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontSize: '20px',
-        color: '#6b7280'
-      }}>
-        🗺️ Map Area - Block {selectedBlock} - Floor {currentFloor}
-        <br />
-        <small>(Tuấn will implement MapCanvas here)</small>
+    <div style={{ position: 'relative', width: '100%', height: '100vh', display: 'flex' }}>
+      {/* Map Area */}
+      <div style={{ flex: 1, backgroundColor: '#f3f4f6', padding: '20px' }}>
+        <h2>Block {selectedBlock} - Floor {currentFloor}</h2>
+        <p>Map will be rendered here (Tuấn will implement MapCanvas)</p>
+        
+        {/* Temporary room list for testing */}
+        <div style={{ marginTop: '20px' }}>
+          <h3>Rooms on this floor:</h3>
+          {layout.rooms.map(room => (
+            <button
+              key={room.id}
+              onClick={() => handleRoomClick(room)}
+              style={{
+                display: 'block',
+                padding: '10px',
+                margin: '5px 0',
+                border: '1px solid #ddd',
+                borderRadius: '8px',
+                backgroundColor: 'white',
+                cursor: 'pointer',
+                width: '100%',
+                textAlign: 'left'
+              }}
+            >
+              {room.label} (Floor {room.floor})
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Floor Selector Card - Always visible */}
-      <FloorSelectorCard />
+      <div style={{ position: 'absolute', bottom: '20px', left: '20px' }}>
+        <FloorSelectorCard />
+      </div>
 
       {/* Room Detail Card - Only show when activeCard is 'room_detail' */}
-      {activeCard === 'room_detail' && <RoomDetailCard />}
+      {activeCard === 'room_detail' && (
+        <div style={{ position: 'absolute', bottom: '20px', right: '20px' }}>
+          <RoomDetailCard />
+        </div>
+      )}
 
       {/* Back button */}
       <button 

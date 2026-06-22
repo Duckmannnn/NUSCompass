@@ -1,5 +1,6 @@
 // src/context/NavigationContext.jsx
 import { createContext, useState, useContext, useMemo, useCallback } from 'react';
+import { roomsData, graph } from '../data/blockCData';
 
 const NavigationContext = createContext();
 
@@ -11,24 +12,26 @@ export function NavigationProvider({ children }) {
   // Current screen: 'home' | 'explore' | 'navigation'
   const [currentView, setCurrentView] = useState('home');
   
-  // Selected building block: 'A' | 'B' | 'C' | 'D' | 'E'
+  // Selected building block (currently only 'C')
   const [selectedBlock, setSelectedBlock] = useState('C');
   
   // Current floor: 1 | 2 | 3 | 4
   const [currentFloor, setCurrentFloor] = useState(1);
   
-  // Currently selected room for details: 'C111' | null
+  // Selected room for details (room object from roomsData)
   const [selectedRoom, setSelectedRoom] = useState(null);
   
   // Active overlay card: 'block_info' | 'room_detail' | null
   const [activeCard, setActiveCard] = useState(null);
   
-  // Navigation points
-  const [startPoint, setStartPoint] = useState(null); // e.g., 'Dining Hall'
-  const [destination, setDestination] = useState(null); // e.g., 'C111'
+  // Navigation points (room IDs)
+  const [startRoomId, setStartRoomId] = useState(null);
+  const [destinationRoomId, setDestinationRoomId] = useState(null);
   
-  // Route path (array of node IDs) and current step index
-  const [routePath, setRoutePath] = useState([]);
+  // Route (array of node IDs from A*)
+  const [route, setRoute] = useState([]);
+  
+  // Current step index in navigation
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   
   // ========================================
@@ -38,14 +41,14 @@ export function NavigationProvider({ children }) {
   // Switch between main screens
   const navigateTo = useCallback((view) => {
     setCurrentView(view);
-    setActiveCard(null); // Reset overlay card when changing screens
+    setActiveCard(null);
   }, []);
   
   // Triggered when clicking A/B/C/D/E on HomeScreen
   const selectBlock = useCallback((block) => {
     setSelectedBlock(block);
-    setCurrentFloor(1); // Reset to floor 1
-    setActiveCard('block_info'); // Show BlockInfoCard overlay
+    setCurrentFloor(1);
+    setActiveCard('block_info');
   }, []);
   
   // Triggered when clicking "Explore" inside BlockInfoCard
@@ -59,11 +62,11 @@ export function NavigationProvider({ children }) {
     setCurrentFloor(floor);
   }, []);
   
-  // Triggered when clicking a room on the map in ExploreScreen
-  const selectRoom = useCallback((roomId) => {
-    setSelectedRoom(roomId);
-    setDestination(roomId);
-    setActiveCard('room_detail'); // Show RoomDetailCard overlay
+  // Triggered when clicking a room on the map
+  const selectRoom = useCallback((room) => {
+    setSelectedRoom(room);
+    setDestinationRoomId(room.id);
+    setActiveCard('room_detail');
   }, []);
   
   // Triggered when clicking "Navigate there" inside RoomDetailCard
@@ -72,31 +75,39 @@ export function NavigationProvider({ children }) {
     setActiveCard(null);
   }, []);
   
-  // Set the starting point (e.g., when user clicks a location on the map)
-  const setStart = useCallback((locationName) => {
-    setStartPoint(locationName);
+  // Set starting point (room ID)
+  const setStartRoom = useCallback((roomId) => {
+    setStartRoomId(roomId);
   }, []);
   
-  // Calculate route using A* algorithm (mocked for now)
+  // Calculate route using A*
   const calculateRoute = useCallback(() => {
-    if (startPoint && destination) {
-      // TODO: Minh - Integrate real A* algorithm here
-      const mockPath = [startPoint, 'node_1', 'node_2', destination];
-      setRoutePath(mockPath);
+    if (!startRoomId || !destinationRoomId) return;
+    
+    const startRoom = roomsData.find(r => r.id === startRoomId);
+    const destRoom = roomsData.find(r => r.id === destinationRoomId);
+    
+    if (!startRoom?.nodeId || !destRoom?.nodeId) return;
+    
+    // Import astar dynamically to avoid circular dependency
+    import('../utils/astar').then(({ astar }) => {
+      const newRoute = astar(startRoom.nodeId, destRoom.nodeId, graph);
+      setRoute(newRoute);
       setCurrentStepIndex(0);
-    }
-  }, [startPoint, destination]);
+      setCurrentFloor(destRoom.floor);
+    });
+  }, [startRoomId, destinationRoomId]);
   
-  // Move to the next step in the navigation guide
+  // Move to next step
   const nextStep = useCallback(() => {
     setCurrentStepIndex((prev) => prev + 1);
   }, []);
   
-  // Reset all navigation states and return to HomeScreen
+  // Reset navigation
   const resetNavigation = useCallback(() => {
-    setStartPoint(null);
-    setDestination(null);
-    setRoutePath([]);
+    setStartRoomId(null);
+    setDestinationRoomId(null);
+    setRoute([]);
     setCurrentStepIndex(0);
     setCurrentView('home');
     setActiveCard(null);
@@ -109,16 +120,16 @@ export function NavigationProvider({ children }) {
   const value = useMemo(() => ({
     // State
     currentView, selectedBlock, currentFloor, selectedRoom, activeCard,
-    startPoint, destination, routePath, currentStepIndex,
+    startRoomId, destinationRoomId, route, currentStepIndex,
     
     // Actions
     navigateTo, selectBlock, startExplore, selectFloor, selectRoom,
-    startNavigation, setStart, calculateRoute, nextStep, resetNavigation
+    startNavigation, setStartRoom, calculateRoute, nextStep, resetNavigation
   }), [
     currentView, selectedBlock, currentFloor, selectedRoom, activeCard,
-    startPoint, destination, routePath, currentStepIndex,
+    startRoomId, destinationRoomId, route, currentStepIndex,
     navigateTo, selectBlock, startExplore, selectFloor, selectRoom,
-    startNavigation, setStart, calculateRoute, nextStep, resetNavigation
+    startNavigation, setStartRoom, calculateRoute, nextStep, resetNavigation
   ]);
   
   return (
@@ -128,7 +139,6 @@ export function NavigationProvider({ children }) {
   );
 }
 
-// Custom hook to easily consume the context in any component
 export const useNavigation = () => {
   const context = useContext(NavigationContext);
   if (!context) {

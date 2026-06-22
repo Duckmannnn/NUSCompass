@@ -1,103 +1,176 @@
 // src/screens/NavigationScreen.jsx
 import { useNavigation } from '../context/NavigationContext';
+import { roomsData, graph, blockCLayout } from '../data/blockCData';
 
 export default function NavigationScreen() {
-  // Get state and actions from Context
   const { 
-    startPoint, 
-    destination, 
-    routePath, 
+    startRoomId, 
+    destinationRoomId, 
+    route, 
     currentStepIndex,
+    currentFloor,
     nextStep,
     navigateTo,
-    resetNavigation
+    resetNavigation,
+    calculateRoute,
+    setStartRoom
   } = useNavigation();
+
+  // Get room details
+  const startRoom = roomsData.find(r => r.id === startRoomId);
+  const destinationRoom = roomsData.find(r => r.id === destinationRoomId);
 
   // Smart button logic
   const handleSmartButton = () => {
-    if (!startPoint) {
+    if (!startRoomId) {
       // No starting point yet → go back to ExploreScreen to select one
       navigateTo('explore');
+    } else if (route.length === 0) {
+      // Has starting point but no route yet → calculate route
+      calculateRoute();
     } else {
-      // Has starting point → move to next step
+      // Has route → move to next step
       nextStep();
     }
   };
 
   // Determine button text and disabled state
   const getButtonText = () => {
-    if (!startPoint) return 'Start navigation';
-    if (currentStepIndex >= routePath.length - 1) return 'Arrived!';
+    if (!startRoomId) return 'Start navigation';
+    if (route.length === 0) return 'Calculate route';
+    if (currentStepIndex >= route.length - 1) return 'Arrived!';
     return 'Next step';
   };
 
   const isButtonDisabled = () => {
-    if (!startPoint) return false;
-    if (currentStepIndex >= routePath.length - 1) return true;
+    if (!startRoomId) return false;
+    if (route.length === 0) return false;
+    if (currentStepIndex >= route.length - 1) return true;
     return false;
   };
 
+  // Generate step guide from route
+  const generateStepGuide = () => {
+    if (route.length === 0) return [];
+
+    const steps = [];
+    
+    for (let i = 0; i < route.length - 1; i++) {
+      const currentNode = graph.nodes.find(n => n.id === route[i]);
+      const nextNode = graph.nodes.find(n => n.id === route[i + 1]);
+      const edge = graph.edges.find(e => 
+        (e.from === route[i] && e.to === route[i + 1]) ||
+        (e.from === route[i + 1] && e.to === route[i])
+      );
+
+      if (!currentNode || !nextNode || !edge) continue;
+
+      let action = '';
+      
+      if (edge.type === 'stairs') {
+        const goingUp = currentNode.floor < nextNode.floor;
+        action = goingUp ? `Go up stairs to floor ${nextNode.floor}` : `Go down stairs to floor ${nextNode.floor}`;
+      } else if (edge.type === 'door-access') {
+        const room = roomsData.find(r => r.nodeId === nextNode.id);
+        action = room ? `Enter ${room.name}` : 'Enter room';
+      } else if (edge.type === 'entrance') {
+        action = 'Start from entrance';
+      } else {
+        // Walk action - calculate direction
+        const dx = nextNode.x - currentNode.x;
+        const dy = nextNode.y - currentNode.y;
+        const distance = edge.distance;
+        
+        if (Math.abs(dx) > Math.abs(dy)) {
+          action = dx > 0 ? `Walk right ${distance}m` : `Walk left ${distance}m`;
+        } else {
+          action = dy > 0 ? `Walk down ${distance}m` : `Walk up ${distance}m`;
+        }
+      }
+
+      steps.push({
+        index: i,
+        action,
+        floor: currentNode.floor,
+        distance: edge.distance
+      });
+    }
+
+    return steps;
+  };
+
+  const steps = generateStepGuide();
+
   return (
-    <div style={{ position: 'relative', width: '100%', height: '100vh' }}>
-      {/* TODO: Tuan - Replace this placeholder with MapCanvas component showing route */}
-      {/* MapCanvas will render SVG map with route overlay */}
-      <div style={{ 
-        width: '100%', 
-        height: '100%', 
-        backgroundColor: '#f3f4f6',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontSize: '20px',
-        color: '#6b7280'
-      }}>
-        🗺️ Navigation Map - Route will be drawn here
-        <br />
-        <small>(Tuấn will implement MapCanvas with route overlay)</small>
+    <div style={{ position: 'relative', width: '100%', height: '100vh', display: 'flex' }}>
+      {/* Map Area */}
+      <div style={{ flex: 1, backgroundColor: '#f3f4f6', padding: '20px' }}>
+        <h2>Navigation - Floor {currentFloor}</h2>
+        <p>Route will be drawn here (Tuấn will implement MapCanvas with route overlay)</p>
+        
+        {/* Temporary route visualization */}
+        {route.length > 0 && (
+          <div style={{ marginTop: '20px', padding: '10px', backgroundColor: 'white', borderRadius: '8px' }}>
+            <h3>Route nodes:</h3>
+            <div style={{ fontSize: '12px', color: '#666' }}>
+              {route.map((nodeId, index) => {
+                const node = graph.nodes.find(n => n.id === nodeId);
+                return (
+                  <div key={index} style={{ 
+                    padding: '5px', 
+                    backgroundColor: index === currentStepIndex ? '#dbeafe' : 'transparent',
+                    borderRadius: '4px',
+                    marginBottom: '2px'
+                  }}>
+                    {index + 1}. {nodeId} (Floor {node?.floor})
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Navigation Info Panel */}
       <div style={{
-        position: 'absolute',
-        top: '20px',
-        left: '20px',
+        width: '400px',
         backgroundColor: 'white',
         padding: '20px',
-        borderRadius: '12px',
-        boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-        minWidth: '300px'
+        boxShadow: '-2px 0 10px rgba(0,0,0,0.1)',
+        overflowY: 'auto'
       }}>
-        <h2 style={{ margin: '0 0 15px 0', fontSize: '18px' }}>Navigation</h2>
+        <h2 style={{ marginTop: 0 }}>Navigation</h2>
         
-        <div style={{ marginBottom: '10px' }}>
-          <strong>Starting point:</strong> {startPoint || 'Not selected'}
-        </div>
-        
-        <div style={{ marginBottom: '15px' }}>
-          <strong>Where you wanna go:</strong> {destination || 'Not selected'}
+        <div style={{ marginBottom: '15px', padding: '10px', backgroundColor: '#f9fafb', borderRadius: '8px' }}>
+          <div style={{ marginBottom: '5px' }}>
+            <strong>Starting point:</strong> {startRoom ? startRoom.name : 'Not selected'}
+          </div>
+          <div>
+            <strong>Where you wanna go:</strong> {destinationRoom ? destinationRoom.name : 'Not selected'}
+          </div>
         </div>
 
         {/* Step Guide */}
-        {routePath.length > 0 && (
-          <div style={{ 
-            borderTop: '1px solid #e5e7eb', 
-            paddingTop: '15px',
-            marginTop: '15px'
-          }}>
-            <h3 style={{ margin: '0 0 10px 0', fontSize: '16px' }}>Step guide</h3>
-            <div style={{ fontSize: '14px', color: '#6b7280' }}>
-              {routePath.map((nodeId, index) => (
+        {steps.length > 0 && (
+          <div style={{ marginTop: '20px' }}>
+            <h3>Step guide</h3>
+            <div style={{ border: '1px solid #e5e7eb', borderRadius: '8px', overflow: 'hidden' }}>
+              {steps.map((step, index) => (
                 <div 
                   key={index}
                   style={{
-                    padding: '8px',
-                    marginBottom: '5px',
-                    backgroundColor: index === currentStepIndex ? '#dbeafe' : 'transparent',
-                    borderRadius: '4px',
-                    fontWeight: index === currentStepIndex ? 'bold' : 'normal'
+                    padding: '15px',
+                    borderBottom: index < steps.length - 1 ? '1px solid #e5e7eb' : 'none',
+                    backgroundColor: index === currentStepIndex ? '#dbeafe' : 'white',
+                    borderLeft: index === currentStepIndex ? '4px solid #3b82f6' : '4px solid transparent'
                   }}
                 >
-                  Step {index + 1}: {nodeId}
+                  <div style={{ fontWeight: index === currentStepIndex ? 'bold' : 'normal' }}>
+                    {step.action}
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '5px' }}>
+                    Floor {step.floor} · {step.distance}m
+                  </div>
                 </div>
               ))}
             </div>
@@ -110,8 +183,8 @@ export default function NavigationScreen() {
           disabled={isButtonDisabled()}
           style={{
             width: '100%',
-            padding: '12px',
-            marginTop: '15px',
+            padding: '15px',
+            marginTop: '20px',
             backgroundColor: isButtonDisabled() ? '#9ca3af' : '#3b82f6',
             color: 'white',
             border: 'none',
@@ -124,12 +197,12 @@ export default function NavigationScreen() {
           {getButtonText()}
         </button>
 
-        {/* Cancel/Reset button */}
+        {/* Cancel button */}
         <button
           onClick={resetNavigation}
           style={{
             width: '100%',
-            padding: '10px',
+            padding: '12px',
             marginTop: '10px',
             backgroundColor: 'transparent',
             color: '#ef4444',
