@@ -2,43 +2,55 @@
 import { useNavigation } from '../../context/NavigationContext';
 
 export default function FloorSelectorCard() {
-  // Get current floor and the action to change floor from Context
   const { currentFloor, selectFloor } = useNavigation();
 
-  // Triggered when user clicks on a floor button
   const handleFloorClick = (floor) => {
     selectFloor(floor);
-    // Context will update currentFloor
-    // MapCanvas (implemented by Tuan) will listen to this change and re-render
   };
 
   return (
-    <div>
-      {/* TODO: Tuan - Design UI for this card */}
-      {/* Figma reference: Page 3 & 4 - "floor 1 floor 2 floor 3 floor 4" buttons */}
-      {/* Requirements:
-          - Position: bottom-left or bottom-right of the map
-          - 4 buttons arranged vertically or horizontally
-          - Active floor should be highlighted (different color/border)
-          - Smooth transition when switching floors
-      */}
-      
-      <div>
-        <h3>Floor</h3>
+    <div style={{ 
+      backgroundColor: 'white', 
+      padding: '20px', 
+      borderRadius: '16px',
+      boxShadow: '0 8px 16px rgba(0,0,0,0.15)',
+      minWidth: '120px'
+    }}>
+      <h3 style={{ 
+        margin: '0 0 15px 0',
+        fontSize: '16px',
+        fontWeight: 'bold',
+        color: '#374151',
+        textAlign: 'center'
+      }}>
+        Floor
+      </h3>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
         {[1, 2, 3, 4].map((floor) => (
           <button
             key={floor}
             onClick={() => handleFloorClick(floor)}
             style={{
-              // Inline styles for now, Tuan will replace with proper CSS
-              backgroundColor: currentFloor === floor ? '#3b82f6' : 'white',
-              color: currentFloor === floor ? 'white' : 'black',
-              border: '1px solid #d1d5db',
-              padding: '10px 20px',
-              margin: '5px',
-              borderRadius: '8px',
+              padding: '14px 20px',
+              backgroundColor: currentFloor === floor ? '#3b82f6' : '#f9fafb',
+              color: currentFloor === floor ? 'white' : '#374151',
+              border: currentFloor === floor ? '2px solid #2563eb' : '2px solid #e5e7eb',
+              borderRadius: '10px',
               cursor: 'pointer',
-              fontWeight: currentFloor === floor ? 'bold' : 'normal'
+              fontWeight: currentFloor === floor ? 'bold' : '500',
+              fontSize: '16px',
+              transition: 'all 0.2s',
+              boxShadow: currentFloor === floor ? '0 4px 8px rgba(59, 130, 246, 0.3)' : 'none'
+            }}
+            onMouseOver={(e) => {
+              if (currentFloor !== floor) {
+                e.currentTarget.style.backgroundColor = '#f3f4f6';
+              }
+            }}
+            onMouseOut={(e) => {
+              if (currentFloor !== floor) {
+                e.currentTarget.style.backgroundColor = '#f9fafb';
+              }
             }}
           >
             Floor {floor}
