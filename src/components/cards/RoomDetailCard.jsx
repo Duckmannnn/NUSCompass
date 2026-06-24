@@ -17,33 +17,74 @@ export default function RoomDetailCard() {
   return (
     <div style={{ 
       backgroundColor: 'white', 
-      padding: '20px', 
-      borderRadius: '12px',
-      boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-      minWidth: '300px'
+      padding: '25px', 
+      borderRadius: '16px',
+      boxShadow: '0 8px 16px rgba(0,0,0,0.15)',
+      minWidth: '320px',
+      animation: 'slideUp 0.3s ease-out'
     }}>
-      <h2 style={{ margin: '0 0 10px 0' }}>{selectedRoom.name}</h2>
-      <p style={{ color: '#6b7280', margin: '0 0 15px 0' }}>
-        Floor {selectedRoom.floor} · {selectedRoom.type}
-      </p>
-      <p style={{ color: '#6b7280', margin: '0 0 20px 0', fontSize: '14px' }}>
-        abt this room, maybe just a double room with some randomass guys inside
-      </p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '15px' }}>
+        <div>
+          <h2 style={{ margin: '0 0 5px 0', fontSize: '24px', color: '#1f2937' }}>
+            {selectedRoom.name}
+          </h2>
+          <div style={{ display: 'flex', gap: '10px', fontSize: '14px', color: '#6b7280' }}>
+            <span>📍 Floor {selectedRoom.floor}</span>
+            <span>•</span>
+            <span>{selectedRoom.type}</span>
+          </div>
+        </div>
+        <button 
+          onClick={handleClose}
+          style={{
+            background: 'none',
+            border: 'none',
+            fontSize: '24px',
+            color: '#9ca3af',
+            cursor: 'pointer',
+            padding: '0',
+            lineHeight: 1
+          }}
+          onMouseOver={(e) => e.currentTarget.style.color = '#6b7280'}
+          onMouseOut={(e) => e.currentTarget.style.color = '#9ca3af'}
+        >
+          ×
+        </button>
+      </div>
+
+      <div style={{ 
+        padding: '15px',
+        backgroundColor: '#f9fafb',
+        borderRadius: '10px',
+        marginBottom: '20px'
+      }}>
+        <p style={{ 
+          margin: 0,
+          color: '#6b7280',
+          fontSize: '14px',
+          lineHeight: '1.6'
+        }}>
+          abt this room, maybe just a double room with some randomass guys inside
+        </p>
+      </div>
       
       <button 
         onClick={handleNavigate}
         style={{
           width: '100%',
-          padding: '12px',
+          padding: '14px',
           backgroundColor: '#3b82f6',
           color: 'white',
           border: 'none',
-          borderRadius: '8px',
+          borderRadius: '10px',
           fontSize: '16px',
           fontWeight: 'bold',
           cursor: 'pointer',
-          marginBottom: '10px'
+          marginBottom: '10px',
+          transition: 'all 0.2s'
         }}
+        onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#2563eb'}
+        onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#3b82f6'}
       >
         Navigate there
       </button>
@@ -52,13 +93,23 @@ export default function RoomDetailCard() {
         onClick={handleClose}
         style={{
           width: '100%',
-          padding: '10px',
+          padding: '12px',
           backgroundColor: 'transparent',
           color: '#6b7280',
           border: '1px solid #d1d5db',
-          borderRadius: '8px',
+          borderRadius: '10px',
           fontSize: '14px',
-          cursor: 'pointer'
+          fontWeight: '500',
+          cursor: 'pointer',
+          transition: 'all 0.2s'
+        }}
+        onMouseOver={(e) => {
+          e.currentTarget.style.backgroundColor = '#f9fafb';
+          e.currentTarget.style.borderColor = '#9ca3af';
+        }}
+        onMouseOut={(e) => {
+          e.currentTarget.style.backgroundColor = 'transparent';
+          e.currentTarget.style.borderColor = '#d1d5db';
         }}
       >
         Close

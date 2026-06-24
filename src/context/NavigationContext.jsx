@@ -9,101 +9,132 @@ export function NavigationProvider({ children }) {
   // STATE
   // ========================================
   
-  // Current screen: 'home' | 'explore' | 'navigation'
+  const [highlightedRoomId, setHighlightedRoomId] = useState(null);
   const [currentView, setCurrentView] = useState('home');
-  
-  // Selected building block (currently only 'C')
   const [selectedBlock, setSelectedBlock] = useState('C');
-  
-  // Current floor: 1 | 2 | 3 | 4
   const [currentFloor, setCurrentFloor] = useState(1);
-  
-  // Selected room for details (room object from roomsData)
   const [selectedRoom, setSelectedRoom] = useState(null);
-  
-  // Active overlay card: 'block_info' | 'room_detail' | null
   const [activeCard, setActiveCard] = useState(null);
-  
-  // Navigation points (room IDs)
   const [startRoomId, setStartRoomId] = useState(null);
   const [destinationRoomId, setDestinationRoomId] = useState(null);
-  
-  // Route (array of node IDs from A*)
   const [route, setRoute] = useState([]);
-  
-  // Current step index in navigation
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   
   // ========================================
   // ACTIONS
   // ========================================
   
-  // Switch between main screens
-  const navigateTo = useCallback((view) => {
+  const setHighlightedRoom = useCallback((roomId) => {
+    setHighlightedRoomId(roomId);
+    setTimeout(() => {
+      setHighlightedRoomId(null);
+    }, 2000);
+  }, []);
+
+  const navigateTo = useCallback((view, preserveCard = false) => {
     setCurrentView(view);
-    setActiveCard(null);
+    if (!preserveCard) {
+      setActiveCard(null);
+    }
   }, []);
   
-  // Triggered when clicking A/B/C/D/E on HomeScreen
   const selectBlock = useCallback((block) => {
     setSelectedBlock(block);
     setCurrentFloor(1);
     setActiveCard('block_info');
   }, []);
   
-  // Triggered when clicking "Explore" inside BlockInfoCard
   const startExplore = useCallback(() => {
     setCurrentView('explore');
     setActiveCard(null);
   }, []);
   
-  // Triggered when clicking Floor 1/2/3/4
   const selectFloor = useCallback((floor) => {
     setCurrentFloor(floor);
   }, []);
   
-  // Triggered when clicking a room on the map
   const selectRoom = useCallback((room) => {
     setSelectedRoom(room);
-    setDestinationRoomId(room.id);
+    setCurrentFloor(room.floor);
+    
+    // Reset route when changing destination in navigation screen
+    setDestinationRoomId((prevDestId) => {
+      if (currentView === 'navigation' && prevDestId && prevDestId !== room.id) {
+        setRoute([]);
+        setCurrentStepIndex(0);
+      }
+      return room.id;
+    });
+    
     setActiveCard('room_detail');
-  }, []);
-  
-  // Triggered when clicking "Navigate there" inside RoomDetailCard
+  }, [currentView]);
+
   const startNavigation = useCallback(() => {
     setCurrentView('navigation');
     setActiveCard(null);
   }, []);
   
-  // Set starting point (room ID)
   const setStartRoom = useCallback((roomId) => {
     setStartRoomId(roomId);
+    // Reset route when start room changes
+    setRoute([]);
+    setCurrentStepIndex(0);
   }, []);
   
   // Calculate route using A*
   const calculateRoute = useCallback(() => {
-    if (!startRoomId || !destinationRoomId) return;
+    console.log('=== calculateRoute called ===');
+    console.log('startRoomId:', startRoomId);
+    console.log('destinationRoomId:', destinationRoomId);
+    
+    if (!startRoomId || !destinationRoomId) {
+      console.log('❌ Missing start or destination');
+      return;
+    }
     
     const startRoom = roomsData.find(r => r.id === startRoomId);
     const destRoom = roomsData.find(r => r.id === destinationRoomId);
     
-    if (!startRoom?.nodeId || !destRoom?.nodeId) return;
+    console.log('startRoom:', startRoom);
+    console.log('destRoom:', destRoom);
     
-    // Import astar dynamically to avoid circular dependency
+    if (!startRoom?.nodeId || !destRoom?.nodeId) {
+      console.log('❌ Missing node IDs');
+      return;
+    }
+    
+    console.log('🚀 Calculating route from', startRoom.nodeId, 'to', destRoom.nodeId);
+    console.log('graph.nodes.length:', graph.nodes.length);
+    console.log('graph.edges.length:', graph.edges.length);
+    
+    // Import astar dynamically
     import('../utils/astar').then(({ astar }) => {
+      console.log('✅ A* imported successfully');
+      
       const newRoute = astar(startRoom.nodeId, destRoom.nodeId, graph);
-      setRoute(newRoute);
-      setCurrentStepIndex(0);
-      setCurrentFloor(destRoom.floor);
+      console.log('📍 Route result:', newRoute);
+      console.log('📍 Route length:', newRoute ? newRoute.length : 0);
+      
+      if (newRoute && newRoute.length > 0) {
+        setRoute(newRoute);
+        setCurrentStepIndex(0);
+        
+        // Switch to start room's floor to see beginning of route
+        setCurrentFloor(startRoom.floor);
+        console.log('✅ Route set successfully');
+      } else {
+        console.error('❌ A* returned empty route or null');
+        alert('Cannot find route between these rooms. They might not be connected.');
+      }
+    }).catch(err => {
+      console.error('❌ A* import error:', err);
     });
   }, [startRoomId, destinationRoomId]);
   
-  // Move to next step
   const nextStep = useCallback(() => {
     setCurrentStepIndex((prev) => prev + 1);
   }, []);
   
-  // Reset navigation
   const resetNavigation = useCallback(() => {
     setStartRoomId(null);
     setDestinationRoomId(null);
@@ -119,17 +150,38 @@ export function NavigationProvider({ children }) {
   
   const value = useMemo(() => ({
     // State
-    currentView, selectedBlock, currentFloor, selectedRoom, activeCard,
-    startRoomId, destinationRoomId, route, currentStepIndex,
+    currentView, 
+    selectedBlock, 
+    currentFloor, 
+    selectedRoom, 
+    activeCard,
+    startRoomId, 
+    destinationRoomId, 
+    route, 
+    currentStepIndex, 
+    highlightedRoomId,
     
     // Actions
-    navigateTo, selectBlock, startExplore, selectFloor, selectRoom,
-    startNavigation, setStartRoom, calculateRoute, nextStep, resetNavigation
+    navigateTo, 
+    selectBlock, 
+    startExplore, 
+    selectFloor, 
+    selectRoom,
+    startNavigation, 
+    setStartRoom, 
+    calculateRoute, 
+    nextStep, 
+    resetNavigation,
+    setHighlightedRoom,
+    setCurrentFloor,  // ← THÊM DÒNG NÀY
+    setRoute,         // ← THÊM DÒNG NÀY (cho advanced use)
+    setCurrentStepIndex  // ← THÊM DÒNG NÀY
   }), [
     currentView, selectedBlock, currentFloor, selectedRoom, activeCard,
-    startRoomId, destinationRoomId, route, currentStepIndex,
+    startRoomId, destinationRoomId, route, currentStepIndex, highlightedRoomId,
     navigateTo, selectBlock, startExplore, selectFloor, selectRoom,
-    startNavigation, setStartRoom, calculateRoute, nextStep, resetNavigation
+    startNavigation, setStartRoom, calculateRoute, nextStep, resetNavigation,
+    setHighlightedRoom, setCurrentFloor, setRoute, setCurrentStepIndex
   ]);
   
   return (
