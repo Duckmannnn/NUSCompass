@@ -1,14 +1,11 @@
-// src/context/NavigationContext.jsx
 import { createContext, useState, useContext, useMemo, useCallback } from 'react';
 import { roomsData, graph } from '../data/blockCData';
+import { astar } from '../utils/astar'; // ← STATIC IMPORT
 
 const NavigationContext = createContext();
 
 export function NavigationProvider({ children }) {
-  // ========================================
-  // STATE
-  // ========================================
-  
+  // ── State ──────────────────────────────────────────────────────────────
   const [highlightedRoomId, setHighlightedRoomId] = useState(null);
   const [currentView, setCurrentView] = useState('home');
   const [selectedBlock, setSelectedBlock] = useState('C');
@@ -19,171 +16,131 @@ export function NavigationProvider({ children }) {
   const [destinationRoomId, setDestinationRoomId] = useState(null);
   const [route, setRoute] = useState([]);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
-  
-  // ========================================
-  // ACTIONS
-  // ========================================
-  
+  const [isCalculating, setIsCalculating] = useState(false);
+  const [routeError, setRouteError] = useState(null);
+
+  // ── Actions ────────────────────────────────────────────────────────────
+
   const setHighlightedRoom = useCallback((roomId) => {
     setHighlightedRoomId(roomId);
-    setTimeout(() => {
-      setHighlightedRoomId(null);
-    }, 2000);
+    setTimeout(() => setHighlightedRoomId(null), 2000);
+  }, []);
+
+  const clearHighlightedRoom = useCallback(() => {
+    setHighlightedRoomId(null);
   }, []);
 
   const navigateTo = useCallback((view, preserveCard = false) => {
     setCurrentView(view);
-    if (!preserveCard) {
-      setActiveCard(null);
-    }
+    if (!preserveCard) setActiveCard(null);
   }, []);
-  
+
   const selectBlock = useCallback((block) => {
     setSelectedBlock(block);
     setCurrentFloor(1);
     setActiveCard('block_info');
   }, []);
-  
+
   const startExplore = useCallback(() => {
     setCurrentView('explore');
     setActiveCard(null);
   }, []);
-  
+
   const selectFloor = useCallback((floor) => {
     setCurrentFloor(floor);
   }, []);
-  
+
   const selectRoom = useCallback((room) => {
     setSelectedRoom(room);
     setCurrentFloor(room.floor);
-    
-    // Reset route when changing destination in navigation screen
-    setDestinationRoomId((prevDestId) => {
-      if (currentView === 'navigation' && prevDestId && prevDestId !== room.id) {
-        setRoute([]);
-        setCurrentStepIndex(0);
-      }
-      return room.id;
-    });
-    
+    setHighlightedRoomId(room.id);
+
+    if (currentView === 'navigation' && destinationRoomId && destinationRoomId !== room.id) {
+      setRoute([]);
+      setCurrentStepIndex(0);
+    }
+
+    setDestinationRoomId(room.id);
     setActiveCard('room_detail');
-  }, [currentView]);
+  }, [currentView, destinationRoomId]);
 
   const startNavigation = useCallback(() => {
     setCurrentView('navigation');
     setActiveCard(null);
   }, []);
-  
+
   const setStartRoom = useCallback((roomId) => {
     setStartRoomId(roomId);
-    // Reset route when start room changes
     setRoute([]);
     setCurrentStepIndex(0);
+    setRouteError(null);
   }, []);
-  
-  // Calculate route using A*
+
+  // Run A* pathfinding — NOW USING STATIC IMPORT
   const calculateRoute = useCallback(() => {
-    console.log('=== calculateRoute called ===');
-    console.log('startRoomId:', startRoomId);
-    console.log('destinationRoomId:', destinationRoomId);
-    
-    if (!startRoomId || !destinationRoomId) {
-      console.log('❌ Missing start or destination');
-      return;
-    }
-    
+    if (!startRoomId || !destinationRoomId) return;
+
     const startRoom = roomsData.find(r => r.id === startRoomId);
     const destRoom = roomsData.find(r => r.id === destinationRoomId);
-    
-    console.log('startRoom:', startRoom);
-    console.log('destRoom:', destRoom);
-    
+
     if (!startRoom?.nodeId || !destRoom?.nodeId) {
-      console.log('❌ Missing node IDs');
+      setRouteError('Selected rooms are not connected to the navigation graph.');
       return;
     }
-    
-    console.log('🚀 Calculating route from', startRoom.nodeId, 'to', destRoom.nodeId);
-    console.log('graph.nodes.length:', graph.nodes.length);
-    console.log('graph.edges.length:', graph.edges.length);
-    
-    // Import astar dynamically
-    import('../utils/astar').then(({ astar }) => {
-      console.log('✅ A* imported successfully');
-      
+
+    setIsCalculating(true);
+    setRouteError(null);
+
+    try {
       const newRoute = astar(startRoom.nodeId, destRoom.nodeId, graph);
-      console.log('📍 Route result:', newRoute);
-      console.log('📍 Route length:', newRoute ? newRoute.length : 0);
-      
+
       if (newRoute && newRoute.length > 0) {
         setRoute(newRoute);
         setCurrentStepIndex(0);
-        
-        // Switch to start room's floor to see beginning of route
         setCurrentFloor(startRoom.floor);
-        console.log('✅ Route set successfully');
       } else {
-        console.error('❌ A* returned empty route or null');
-        alert('Cannot find route between these rooms. They might not be connected.');
+        setRouteError('No path found between the selected rooms.');
       }
-    }).catch(err => {
-      console.error('❌ A* import error:', err);
-    });
+    } catch (err) {
+      setRouteError('Failed to calculate route. Please try again.');
+    } finally {
+      setIsCalculating(false);
+    }
   }, [startRoomId, destinationRoomId]);
-  
+
   const nextStep = useCallback(() => {
     setCurrentStepIndex((prev) => prev + 1);
   }, []);
-  
+
   const resetNavigation = useCallback(() => {
     setStartRoomId(null);
     setDestinationRoomId(null);
     setRoute([]);
     setCurrentStepIndex(0);
-    setCurrentView('home');
+    setRouteError(null);
     setActiveCard(null);
   }, []);
-  
-  // ========================================
-  // VALUE
-  // ========================================
-  
+
+  // ── Context value ──────────────────────────────────────────────────────
   const value = useMemo(() => ({
     // State
-    currentView, 
-    selectedBlock, 
-    currentFloor, 
-    selectedRoom, 
-    activeCard,
-    startRoomId, 
-    destinationRoomId, 
-    route, 
-    currentStepIndex, 
-    highlightedRoomId,
-    
-    // Actions
-    navigateTo, 
-    selectBlock, 
-    startExplore, 
-    selectFloor, 
-    selectRoom,
-    startNavigation, 
-    setStartRoom, 
-    calculateRoute, 
-    nextStep, 
-    resetNavigation,
-    setHighlightedRoom,
-    setCurrentFloor,  // ← THÊM DÒNG NÀY
-    setRoute,         // ← THÊM DÒNG NÀY (cho advanced use)
-    setCurrentStepIndex  // ← THÊM DÒNG NÀY
-  }), [
     currentView, selectedBlock, currentFloor, selectedRoom, activeCard,
-    startRoomId, destinationRoomId, route, currentStepIndex, highlightedRoomId,
+    startRoomId, destinationRoomId, route, currentStepIndex,
+    highlightedRoomId, isCalculating, routeError,
+
+    // Actions
     navigateTo, selectBlock, startExplore, selectFloor, selectRoom,
     startNavigation, setStartRoom, calculateRoute, nextStep, resetNavigation,
-    setHighlightedRoom, setCurrentFloor, setRoute, setCurrentStepIndex
+    setHighlightedRoom, clearHighlightedRoom, setCurrentFloor,
+  }), [
+    currentView, selectedBlock, currentFloor, selectedRoom, activeCard,
+    startRoomId, destinationRoomId, route, currentStepIndex,
+    highlightedRoomId, isCalculating, routeError,
+    navigateTo, selectBlock, startExplore, selectFloor, selectRoom,
+    startNavigation, setStartRoom, calculateRoute, nextStep, resetNavigation,
+    setHighlightedRoom, clearHighlightedRoom,
   ]);
-  
+
   return (
     <NavigationContext.Provider value={value}>
       {children}
