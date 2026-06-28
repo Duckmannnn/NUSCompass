@@ -57,3 +57,85 @@ We categorize our testing into four main levels:
 2. System generates path involving stairs.
 3. User clicks through Floor 1 -> 2 -> 3 -> 4.
 4. **Result:** Map transitions smoothly, route segments update per floor. ✅
+---
+
+## 3. User Acceptance Testing (UAT) & Bug Tracking
+
+### 3.1 Testing Setup
+We conducted iterative testing sessions with team members and a small group of NUS students to validate the core navigation features. Instead of a one-time perfect test, we adopted a continuous testing approach, identifying bugs and fixing them day by day.
+- **Participants:** 2 team members (internal testing) + 3 NUS students (external testing).
+- **Duration:** Ongoing over 2 weeks.
+- **Methodology:** Task-based observation, bug reporting, and daily hotfixes.
+
+### 3.2 Quantitative Results (Initial vs. After Fixes)
+Users rated their experience on a scale of 1 to 5. The scores below reflect the improvement after we addressed the initial batch of bugs.
+
+| Metric | Initial Score | Current Score | Notes |
+| :--- | :---: | :---: | :--- |
+| **Ease of Use** | 3.2 | 4.0 | UI was confusing initially; improved button labels and flow. |
+| **Route Accuracy** | 3.5 | 4.2 | Fixed floor transition logic and route sorting issues. |
+| **Performance** | 4.0 | 4.5 | Search debounce improved typing experience. |
+| **Visual Clarity** | 3.8 | 4.0 | Map rendering is clear, still refining SVG shapes. |
+| **Overall Satisfaction** | **3.6** | **4.1** | App is functional but still needs polish for production. |
+
+### 3.3 Real-World Bugs Found & Fixed
+During the testing phase, we encountered several critical bugs. Below is a summary of the issues found and our ongoing efforts to resolve them:
+
+**Bug 1: Route Overview Sorting Logic (Critical)**
+- **Issue:** When navigating from a higher floor to a lower floor (e.g., Floor 4 to Floor 1), the Route Overview panel displayed the floors in dictionary order (Floor 1, Floor 2, Floor 3, Floor 4) instead of the actual travel direction.
+- **Root Cause:** The `floorList` array was hardcoded to sort in ascending order `(a - b)`.
+- **Fix:** Updated the sorting logic in `NavigationScreen.jsx` to dynamically sort based on the start and end floor nodes from the actual route graph.
+- **Status:** ✅ Fixed.
+
+**Bug 2: "Exploring" Button Not Resetting State**
+- **Issue:** When the user clicked the "Exploring" button without selecting a destination, the app did not navigate back to the HomeScreen as expected. The button appeared disabled or did nothing.
+- **Root Cause:** The `handleSmartButton` function lacked a condition for `!startRoomId`, and the button had a `disabled` attribute blocking the click event.
+- **Fix:** Removed the strict `disabled` condition and added `navigateTo('home')` logic when no start room is selected.
+- **Status:** ✅ Fixed.
+
+**Bug 3: Inaccurate Start/End Floor Detection**
+- **Issue:** The system sometimes failed to correctly identify the starting floor, causing the route overview to display the wrong initial floor.
+- **Root Cause:** The code was picking the first floor from an unsorted object key list instead of the actual first node in the calculated path.
+- **Fix:** Changed logic to extract `startFloor` and `endFloor` directly from `graph.nodes.find(n => n.id === route[0])`.
+- **Status:** ✅ Fixed.
+
+**Bug 4: SVG Map Shapes Not Matching Reality**
+- **Issue:** The overview map blocks looked like simple rectangles or distorted polygons, not matching the actual Eusoff Hall layout.
+- **Root Cause:** Manual coordinate estimation was inaccurate.
+- **Fix:** Currently iterating on SVG paths, planning to use vector tracing tools for pixel-perfect accuracy in the next milestone.
+- **Status:** 🔄 In Progress.
+
+---
+
+## 4. Test Execution Log
+
+This log tracks our daily testing and debugging efforts.
+
+| Date | Test Phase | Focus Area | Bugs Found | Bugs Fixed | Notes |
+| :--- | :--- | :--- | :---: | :---: | :--- |
+| 15/06 | Unit Testing | A* Algorithm | 2 | 2 | Fixed edge case where start == end node. |
+| 18/06 | Integration | Route Generation | 1 | 1 | Fixed path reconstruction returning undefined. |
+| 22/06 | System Testing | Navigation Flow | 3 | 2 | Found Route Overview sorting bug. Fixed 2, 1 pending. |
+| 24/06 | UI/UX Testing | Button States | 1 | 1 | Fixed "Exploring" button not navigating to Home. |
+| 26/06 | User Testing | External Users | 4 | 1 | External users found UI confusing. Refactoring text. |
+| 28/06 | Regression | All Features | 0 | 2 | Fixed remaining sorting and floor detection bugs. |
+
+---
+
+## 5. Automation Strategy (Future Work)
+
+While the current milestone focused heavily on manual testing and daily bug fixing to stabilize the core features, we recognize the need for automated testing to prevent regressions.
+
+### 5.1 Tool Selection
+- **Unit & Integration Tests:** Jest + React Testing Library.
+- **End-to-End (E2E) Tests:** Cypress.
+
+### 5.2 Implementation Plan
+1. **Setup:** Configure Jest in the Vite environment.
+2. **Unit Tests:** Write automated scripts for `astar.js` to ensure pathfinding logic remains intact during refactoring.
+3. **E2E Tests:** Create Cypress scripts to simulate a user searching for a room and verifying the route overlay appears.
+4. **CI/CD Integration:** Integrate tests into GitHub Actions to run automatically on every Pull Request.
+
+### 5.3 Coverage Goals
+- Achieve **>80% code coverage** for all utility functions (`src/utils/`).
+- Achieve **100% coverage** for critical pathfinding logic.
