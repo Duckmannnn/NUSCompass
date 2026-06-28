@@ -1,11 +1,11 @@
+// src/screens/HomeScreen.jsx
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigation } from '../context/NavigationContext';
 import { roomsData } from '../data/blockCData';
-import BlockInfoCard from '../components/cards/BlockInfoCard';
+import OverviewMap from '../components/map/OverviewMap';
 
 export default function HomeScreen() {
   const {
-    activeCard,
     highlightedRoomId,
     selectBlock,
     selectRoom,
@@ -17,16 +17,22 @@ export default function HomeScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
 
-  // ── Debounce search input (300ms delay) ───────────────────────────────
+  // Debounce search input (300ms)
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedQuery(searchQuery), 300);
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  const handleBlockClick = (block) => {
-    selectBlock(block);
+  // Handle block selection from overview map
+  const handleSelectBlock = (blockId) => {
+    selectBlock(blockId);
+    // Auto navigate to explore after a short delay
+    setTimeout(() => {
+      navigateTo('explore');
+    }, 300);
   };
 
+  // Handle search result click
   const handleSearchResultClick = (room) => {
     setHighlightedRoom(room.id);
 
@@ -37,7 +43,7 @@ export default function HomeScreen() {
     }, 500);
   };
 
-  // ── Memoized filtered rooms with debounce ─────────────────────────────
+  // Filter rooms based on search query
   const filteredRooms = useMemo(() => {
     if (!debouncedQuery) return [];
     const query = debouncedQuery.toLowerCase();
@@ -51,33 +57,33 @@ export default function HomeScreen() {
     <div style={{
       minHeight: '100vh',
       background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      padding: '40px 20px',
+      padding: '20px',
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center'
     }}>
       {/* Header */}
-      <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+      <div style={{ textAlign: 'center', marginBottom: '20px' }}>
         <h1 style={{
-          fontSize: '48px', fontWeight: 'bold', color: 'white',
-          margin: '0 0 10px 0', textShadow: '2px 2px 4px rgba(0,0,0,0.2)'
+          fontSize: '36px', fontWeight: 'bold', color: 'white',
+          margin: '0 0 5px 0', textShadow: '2px 2px 4px rgba(0,0,0,0.2)'
         }}>
           NUScompass
         </h1>
-        <p style={{ fontSize: '20px', color: 'rgba(255,255,255,0.9)', margin: 0 }}>
-          Where you wanna go?
+        <p style={{ fontSize: '16px', color: 'rgba(255,255,255,0.9)', margin: 0 }}>
+          Navigate Eusoff Hall with ease
         </p>
       </div>
 
       {/* Search */}
-      <div style={{ width: '100%', maxWidth: '600px', marginBottom: '30px' }}>
+      <div style={{ width: '100%', maxWidth: '600px', marginBottom: '20px' }}>
         <input
           type="text"
           placeholder="Search rooms or places in Eusoff.."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           style={{
-            width: '100%', padding: '16px 20px', fontSize: '16px',
+            width: '100%', padding: '14px 20px', fontSize: '16px',
             border: 'none', borderRadius: '12px',
             boxShadow: '0 4px 6px rgba(0,0,0,0.1)', outline: 'none'
           }}
@@ -122,41 +128,41 @@ export default function HomeScreen() {
         )}
       </div>
 
-      {/* Block selection grid */}
+      {/* Overview Map */}
       <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))',
-        gap: '15px', width: '100%', maxWidth: '600px'
+        width: '100%',
+        maxWidth: '900px',
+        backgroundColor: 'white',
+        borderRadius: '16px',
+        padding: '20px',
+        boxShadow: '0 10px 25px rgba(0,0,0,0.2)',
+        marginBottom: '20px'
       }}>
-        {['A', 'B', 'C', 'D', 'E'].map((block) => (
-          <button
-            key={block}
-            onClick={() => handleBlockClick(block)}
-            style={{
-              padding: '20px', fontSize: '24px', fontWeight: 'bold',
-              border: 'none', borderRadius: '12px', backgroundColor: 'white',
-              color: '#667eea', cursor: 'pointer',
-              boxShadow: '0 4px 6px rgba(0,0,0,0.1)', transition: 'all 0.3s'
-            }}
-            onMouseOver={e => {
-              e.currentTarget.style.transform = 'translateY(-4px)';
-              e.currentTarget.style.boxShadow = '0 8px 12px rgba(0,0,0,0.2)';
-            }}
-            onMouseOut={e => {
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)';
-            }}
-          >
-            {block}
-          </button>
-        ))}
+        <OverviewMap onSelectBlock={handleSelectBlock} />
       </div>
 
-      <p style={{ marginTop: '40px', color: 'rgba(255,255,255,0.7)', fontSize: '14px' }}>
-        Office blocks
-      </p>
-
-      {activeCard === 'block_info' && <BlockInfoCard />}
+      {/* Legend */}
+      <div style={{
+        display: 'flex',
+        gap: '20px',
+        flexWrap: 'wrap',
+        justifyContent: 'center',
+        color: 'rgba(255,255,255,0.9)',
+        fontSize: '14px'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ width: '16px', height: '16px', backgroundColor: '#3b82f6', borderRadius: '4px' }} />
+          <span>Available</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ width: '16px', height: '16px', backgroundColor: '#9ca3af', borderRadius: '4px', opacity: 0.7 }} />
+          <span>Coming Soon</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ width: '16px', height: '16px', backgroundColor: '#10b981', borderRadius: '50%' }} />
+          <span>Connection</span>
+        </div>
+      </div>
 
       <style>{`
         @keyframes glowBlue {

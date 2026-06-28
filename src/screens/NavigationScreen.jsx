@@ -141,7 +141,6 @@ export default function NavigationScreen() {
       let description = '';
       
       if (floorData.hasStairs) {
-        // Có cầu thang - mô tả đi đến cầu thang
         const stepsBeforeStairs = floorData.steps.filter(s => s.stepType !== 'stairs');
         
         if (stepsBeforeStairs.length > 0) {
@@ -150,14 +149,11 @@ export default function NavigationScreen() {
           description = `Take stairs to Floor ${floorData.nextFloor}`;
         }
       } else if (floorData.steps.some(s => s.stepType === 'enter')) {
-        // Vào phòng
         const enterStep = floorData.steps.find(s => s.stepType === 'enter');
         description = enterStep?.action || 'Enter destination';
       } else if (floorData.steps.some(s => s.stepType === 'start')) {
-        // Bắt đầu từ entrance
         description = 'Start from entrance';
       } else {
-        // Chỉ đi bộ
         const totalDist = floorData.totalDistance;
         if (totalDist < 50) {
           description = `Walk ${totalDist}m to destination`;
@@ -175,8 +171,23 @@ export default function NavigationScreen() {
   // Get ordered list of floors (ONLY when route exists)
   const floorList = useMemo(() => {
     if (route.length === 0) return [];
-    return Object.keys(stepsByFloor).map(Number).sort((a, b) => a - b);
-  }, [stepsByFloor, route.length]);
+    
+    // Get the actual start and end floors from the route
+    const startNode = graph.nodes.find(n => n.id === route[0]);
+    const endNode = graph.nodes.find(n => n.id === route[route.length - 1]);
+    
+    const startFloor = startNode?.floor || 1;
+    const endFloor = endNode?.floor || 1;
+    
+    const floors = Object.keys(stepsByFloor).map(Number);
+    
+    // Sort based on direction of travel
+    if (startFloor > endFloor) {
+      return floors.sort((a, b) => b - a); // Descending: 4, 3, 2, 1
+    } else {
+      return floors.sort((a, b) => a - b); // Ascending: 1, 2, 3, 4
+    }
+  }, [stepsByFloor, route, graph.nodes]);
 
   const currentIndex = floorList.indexOf(currentFloor);
   const prevFloor = currentIndex > 0 ? floorList[currentIndex - 1] : null;
@@ -209,7 +220,7 @@ export default function NavigationScreen() {
 
   const handleSmartButton = useCallback(() => {
     if (!startRoomId) {
-      navigateTo('explore');
+      navigateTo('home'); // ← Về HomeScreen thay vì ExploreScreen
     } else if (!destinationRoomId) {
       setLocalError('Please select a destination first.');
     } else if (route.length === 0) {
@@ -239,7 +250,7 @@ export default function NavigationScreen() {
 
   const getButtonText = () => {
     if (isCalculating) return 'Calculating...';
-    if (!startRoomId) return 'Exploring';
+    if (!startRoomId) return 'Back to Home'; // ← Đổi từ 'Exploring' sang 'Back to Home'
     if (!destinationRoomId) return 'Select destination';
     if (route.length === 0) return 'Calculate route';
     if (currentStepIndex >= route.length - 1) return 'Arrived!';
@@ -589,33 +600,33 @@ export default function NavigationScreen() {
           </div>
         )}
 
-        {/* Primary action button (Calculate route) - ONLY SHOW BEFORE CALCULATION */}
+        {/* Primary action button - ALWAYS SHOW (changed behavior) */}
         {!hasRoute && (
           <button
             onClick={handleSmartButton}
-            disabled={isCalculating || !startRoomId || !destinationRoomId}
+            disabled={isCalculating} // ← Chỉ disabled khi đang calculating
             style={{
               width: '100%',
               padding: '16px',
               marginTop: '25px',
-              backgroundColor: isCalculating || !startRoomId || !destinationRoomId ? '#9ca3af' : '#3b82f6',
+              backgroundColor: isCalculating ? '#9ca3af' : '#3b82f6', // ← Luôn xanh khi không calculating
               color: 'white',
               border: 'none',
               borderRadius: '12px',
               fontSize: '18px',
               fontWeight: 'bold',
-              cursor: isCalculating || !startRoomId || !destinationRoomId ? 'not-allowed' : 'pointer',
-              boxShadow: !isCalculating && startRoomId && destinationRoomId ? '0 4px 8px rgba(59, 130, 246, 0.3)' : 'none',
+              cursor: isCalculating ? 'not-allowed' : 'pointer',
+              boxShadow: !isCalculating ? '0 4px 8px rgba(59, 130, 246, 0.3)' : 'none',
               transition: 'all 0.2s'
             }}
             onMouseOver={e => {
-              if (!isCalculating && startRoomId && destinationRoomId) {
+              if (!isCalculating) {
                 e.currentTarget.style.backgroundColor = '#2563eb';
                 e.currentTarget.style.transform = 'translateY(-2px)';
               }
             }}
             onMouseOut={e => {
-              if (!isCalculating && startRoomId && destinationRoomId) {
+              if (!isCalculating) {
                 e.currentTarget.style.backgroundColor = '#3b82f6';
                 e.currentTarget.style.transform = 'translateY(0)';
               }
