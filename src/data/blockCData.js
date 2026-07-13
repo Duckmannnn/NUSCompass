@@ -52,8 +52,29 @@ function block({ id, label = id, floor, type, x, y, width, height, doorSide, zon
   };
 }
 
-function room(id, floor, x, y, width, height, doorSide, zone) {
-  return block({ id, floor, type: 'room', x, y, width, height, doorSide, zone });
+function room(
+  id,
+  floor,
+  x,
+  y,
+  width,
+  height,
+  doorSide,
+  zone,
+  label = id
+) {
+  return block({
+    id,
+    label,
+    floor,
+    type: 'room',
+    x,
+    y,
+    width,
+    height,
+    doorSide,
+    zone,
+  });
 }
 
 function facility(id, label, floor, x, y, width, height, doorSide, zone) {
@@ -112,11 +133,40 @@ function makeTopLeftStack(floor, ids) {
 }
 
 function makeTopRightStack(floor, ids) {
-  const isSixStack = ids.length === 6;
-  const yValues = isSixStack ? [95, 145, 195, 245, 295, 345] : [245, 304, 363];
-  const heights = isSixStack ? [50, 50, 50, 50, 50, 50] : [59, 59, 58];
-  return ids.map((id, i) =>
-    room(id, floor, 879, yValues[i], 88, heights[i], 'left', 'temasek-right')
+  const stackLayouts = {
+    3: {
+      yValues: [245, 304, 363],
+      heights: [59, 59, 58],
+    },
+    5: {
+      yValues: [125, 185, 245, 305, 363],
+      heights: [60, 60, 60, 58, 58],
+    },
+    6: {
+      yValues: [95, 145, 195, 245, 295, 345],
+      heights: [50, 50, 50, 50, 50, 50],
+    },
+  };
+
+  const layout = stackLayouts[ids.length];
+
+  if (!layout) {
+    throw new Error(
+      `Unsupported top-right stack size: ${ids.length}`
+    );
+  }
+
+  return ids.map((id, index) =>
+    room(
+      id,
+      floor,
+      879,
+      layout.yValues[index],
+      88,
+      layout.heights[index],
+      'left',
+      'temasek-right'
+    )
   );
 }
 
@@ -160,6 +210,17 @@ function makeFloor1Layout() {
       ...makeMiddleRooms(1, 'C1'),
       ...makeTopLeftStack(1, ['C119', 'C118', 'C117', 'C115', 'C113']),
       ...makeTopRightStack(1, ['C116', 'C114', 'C112']),
+    room(
+      'RF-FLAT',
+      1,
+      879,
+      38,
+      231,
+      182,
+      'left',
+      'temasek-right',
+      'RF Flat'
+    ),
     ],
     facilities: [
       facility('F1-EW',      'EW Room',     1, 879, 421, 88,  55,  'left', 'temasek-right'),
@@ -167,7 +228,7 @@ function makeFloor1Layout() {
       facility('F1-LAUNDRY', 'Laundry',     1, 793, 735, 131, 133, 'top',  'lower'),
       facility('F1-DRYING',  'Drying Yard', 1, 924, 735, 159, 133, 'top',  'lower'),
     ],
-    specials: [special('F1-RF', 'RF Flat', 1, 879, 38, 231, 182, 'left', 'temasek-right')],
+    specials: [],
     stairs: makeCommonStairs(1),
   };
 }
@@ -391,11 +452,14 @@ function makeRoomsData(layouts) {
       ...(layout.specials ?? []).filter((item) => item.nodeId),
     ])
     .map((item) => {
-      const isRoom = item.type === 'room';
+      const isNumberedRoom =
+    item.type === 'room' && item.label === item.id;
       return {
         id: item.id,
-        displayName: isRoom ? `Eusoff Block C Room ${item.id}` : `${item.label} · Eusoff Block C`,
-        name: isRoom ? item.id : item.label,
+        displayName: isNumberedRoom
+      ? `Eusoff Block C Room ${item.id}`
+      : `${item.label} · Eusoff Block C`,
+        name: isNumberedRoom ? item.id : item.label,
         building: 'Eusoff Block C',
         floor: item.floor,
         type: item.type,

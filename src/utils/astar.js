@@ -1,80 +1,287 @@
+const MIN_FLOOR_TRANSITION_COST = 85;
+
 function buildNodeMap(nodes) {
-  return new Map(nodes.map((node) => [node.id, node]));
+  return new Map(
+    nodes.map((node) => [node.id, node])
+  );
 }
 
-function buildAdjacencyList(edges) {
-  const adjacencyList = new Map();
+function getEdgeCost(edge) {
+  return (
+    (edge.distance ?? 1) +
+    (edge.penalty ?? 0)
+  );
+}
 
-  function addConnection(from, to, cost) {
-    if (!adjacencyList.has(from)) {
-      adjacencyList.set(from, []);
-    }
-
-    adjacencyList.get(from).push({ id: to, cost });
-  }
+/**
+ * Graph data already contains the intended directed edges.
+ * Duplicate from -> to edges are collapsed, preserving
+ * the cheapest available cost.
+ */
+function buildAdjacencyList(nodes, edges) {
+  const adjacencyMaps = new Map(
+    nodes.map((node) => [
+      node.id,
+      new Map(),
+    ])
+  );
 
   for (const edge of edges) {
-    const cost = (edge.distance ?? 1) + (edge.penalty ?? 0);
+    const fromNeighbors =
+      adjacencyMaps.get(edge.from);
 
-    // Make edges bidirectional for indoor navigation.
-    addConnection(edge.from, edge.to, cost);
-    addConnection(edge.to, edge.from, cost);
+    if (
+      !fromNeighbors ||
+      !adjacencyMaps.has(edge.to)
+    ) {
+      continue;
+    }
+
+    const cost = getEdgeCost(edge);
+
+    if (
+      !Number.isFinite(cost) ||
+      cost < 0
+    ) {
+      continue;
+    }
+
+    const existingCost =
+      fromNeighbors.get(edge.to);
+
+    if (
+      existingCost === undefined ||
+      cost < existingCost
+    ) {
+      fromNeighbors.set(edge.to, cost);
+    }
+  }
+
+  const adjacencyList = new Map();
+
+  for (
+    const [nodeId, neighborMap]
+    of adjacencyMaps
+  ) {
+    adjacencyList.set(
+      nodeId,
+      [...neighborMap.entries()].map(
+        ([id, cost]) => ({
+          id,
+          cost,
+        })
+      )
+    );
   }
 
   return adjacencyList;
 }
 
+/**
+ * Admissible and consistent heuristic:
+ *
+ * - Same floor: 0.
+ * - Different floors: minimum stair cost per floor.
+ */
 function heuristic(currentNode, goalNode) {
-  const dx = currentNode.x - goalNode.x;
-  const dy = currentNode.y - goalNode.y;
-  const floorDifference = Math.abs(currentNode.floor - goalNode.floor);
+  const floorDifference = Math.abs(
+    currentNode.floor - goalNode.floor
+  );
 
-  return Math.sqrt(dx * dx + dy * dy) + floorDifference * 120;
+  return (
+    floorDifference *
+    MIN_FLOOR_TRANSITION_COST
+  );
 }
 
-function getLowestScoreNode(openSet, fScore) {
-  let bestNodeId = null;
-  let bestScore = Infinity;
+/**
+ * Binary min-heap for the A* frontier.
+ *
+ * Smaller fScore has higher priority.
+ * gScore is used as a tie-breaker.
+ */
+class MinHeap {
+  constructor() {
+    this.items = [];
+  }
 
-  for (const nodeId of openSet) {
-    const score = fScore.get(nodeId) ?? Infinity;
+  get size() {
+    return this.items.length;
+  }
 
-    if (score < bestScore) {
-      bestScore = score;
-      bestNodeId = nodeId;
+  push(entry) {
+    this.items.push(entry);
+    this.bubbleUp(this.items.length - 1);
+  }
+
+  pop() {
+    if (this.items.length === 0) {
+      return null;
+    }
+
+    const minimum = this.items[0];
+    const last = this.items.pop();
+
+    if (this.items.length > 0) {
+      this.items[0] = last;
+      this.bubbleDown(0);
+    }
+
+    return minimum;
+  }
+
+  hasHigherPriority(first, second) {
+    if (first.fScore !== second.fScore) {
+      return first.fScore < second.fScore;
+    }
+
+    return first.gScore < second.gScore;
+  }
+
+  bubbleUp(startIndex) {
+    let index = startIndex;
+
+    while (index > 0) {
+      const parentIndex =
+        Math.floor((index - 1) / 2);
+
+      if (
+        !this.hasHigherPriority(
+          this.items[index],
+          this.items[parentIndex]
+        )
+      ) {
+        break;
+      }
+
+      [
+        this.items[index],
+        this.items[parentIndex],
+      ] = [
+        this.items[parentIndex],
+        this.items[index],
+      ];
+
+      index = parentIndex;
     }
   }
 
-  return bestNodeId;
+  bubbleDown(startIndex) {
+    let index = startIndex;
+
+    while (true) {
+      const leftIndex =
+        index * 2 + 1;
+
+      const rightIndex =
+        index * 2 + 2;
+
+      let smallestIndex = index;
+
+      if (
+        leftIndex < this.items.length &&
+        this.hasHigherPriority(
+          this.items[leftIndex],
+          this.items[smallestIndex]
+        )
+      ) {
+        smallestIndex = leftIndex;
+      }
+
+      if (
+        rightIndex < this.items.length &&
+        this.hasHigherPriority(
+          this.items[rightIndex],
+          this.items[smallestIndex]
+        )
+      ) {
+        smallestIndex = rightIndex;
+      }
+
+      if (smallestIndex === index) {
+        break;
+      }
+
+      [
+        this.items[index],
+        this.items[smallestIndex],
+      ] = [
+        this.items[smallestIndex],
+        this.items[index],
+      ];
+
+      index = smallestIndex;
+    }
+  }
 }
 
-function reconstructPath(cameFrom, currentId) {
-  const path = [currentId];
+function reconstructPath(
+  cameFrom,
+  goalId
+) {
+  const path = [goalId];
+  const visited = new Set([goalId]);
+
+  let currentId = goalId;
 
   while (cameFrom.has(currentId)) {
-    currentId = cameFrom.get(currentId);
-    path.unshift(currentId);
+    const previousId =
+      cameFrom.get(currentId);
+
+    if (
+      !previousId ||
+      visited.has(previousId)
+    ) {
+      return [];
+    }
+
+    visited.add(previousId);
+    path.push(previousId);
+    currentId = previousId;
   }
+
+  path.reverse();
 
   return path;
 }
 
-export function astar(startId, goalId, graph) {
-  if (!startId || !goalId || !graph) {
+export function astar(
+  startId,
+  goalId,
+  graph
+) {
+  if (
+    !startId ||
+    !goalId ||
+    !graph
+  ) {
     return [];
   }
 
   const nodes = graph.nodes ?? [];
   const edges = graph.edges ?? [];
 
-  const nodeMap = buildNodeMap(nodes);
-  const adjacencyList = buildAdjacencyList(edges);
+  const nodeMap =
+    buildNodeMap(nodes);
 
-  const startNode = nodeMap.get(startId);
-  const goalNode = nodeMap.get(goalId);
+  const startNode =
+    nodeMap.get(startId);
 
-  if (!startNode || !goalNode) {
-    console.warn("Start or goal node not found", { startId, goalId });
+  const goalNode =
+    nodeMap.get(goalId);
+
+  if (
+    !startNode ||
+    !goalNode
+  ) {
+    console.warn(
+      'Start or goal node not found',
+      {
+        startId,
+        goalId,
+      }
+    );
+
     return [];
   }
 
@@ -82,54 +289,133 @@ export function astar(startId, goalId, graph) {
     return [startId];
   }
 
-  const openSet = new Set([startId]);
-  const cameFrom = new Map();
+  const adjacencyList =
+    buildAdjacencyList(nodes, edges);
 
-  const gScore = new Map();
-  const fScore = new Map();
+  const openHeap =
+    new MinHeap();
 
-  gScore.set(startId, 0);
-  fScore.set(startId, heuristic(startNode, goalNode));
+  const closedSet =
+    new Set();
 
-  while (openSet.size > 0) {
-    const currentId = getLowestScoreNode(openSet, fScore);
+  const cameFrom =
+    new Map();
 
-    if (currentId === goalId) {
-      return reconstructPath(cameFrom, currentId);
+  const gScore =
+    new Map([[startId, 0]]);
+
+  const startFScore =
+    heuristic(startNode, goalNode);
+
+  openHeap.push({
+    id: startId,
+    gScore: 0,
+    fScore: startFScore,
+  });
+
+  while (openHeap.size > 0) {
+    const current =
+      openHeap.pop();
+
+    if (!current) {
+      break;
     }
 
-    openSet.delete(currentId);
+    const bestKnownGScore =
+      gScore.get(current.id) ??
+      Infinity;
 
-    const neighbors = adjacencyList.get(currentId) ?? [];
+    /**
+     * The heap has no decrease-key operation.
+     *
+     * When a better route is found, a new entry is pushed.
+     * Older entries remain in the heap and are ignored here.
+     */
+    if (
+      current.gScore !== bestKnownGScore
+    ) {
+      continue;
+    }
+
+    if (closedSet.has(current.id)) {
+      continue;
+    }
+
+    if (current.id === goalId) {
+      return reconstructPath(
+        cameFrom,
+        current.id
+      );
+    }
+
+    closedSet.add(current.id);
+
+    const neighbors =
+      adjacencyList.get(current.id) ?? [];
 
     for (const neighbor of neighbors) {
-      const tentativeGScore = (gScore.get(currentId) ?? Infinity) + neighbor.cost;
+      if (closedSet.has(neighbor.id)) {
+        continue;
+      }
 
-      if (tentativeGScore < (gScore.get(neighbor.id) ?? Infinity)) {
-        cameFrom.set(neighbor.id, currentId);
-        gScore.set(neighbor.id, tentativeGScore);
+      const neighborNode =
+        nodeMap.get(neighbor.id);
 
-        const neighborNode = nodeMap.get(neighbor.id);
+      if (!neighborNode) {
+        continue;
+      }
 
-        if (!neighborNode) {
-          continue;
-        }
+      const tentativeGScore =
+        current.gScore +
+        neighbor.cost;
 
-        fScore.set(
-          neighbor.id,
-          tentativeGScore + heuristic(neighborNode, goalNode)
+      const knownGScore =
+        gScore.get(neighbor.id) ??
+        Infinity;
+
+      if (
+        tentativeGScore >= knownGScore
+      ) {
+        continue;
+      }
+
+      const neighborFScore =
+        tentativeGScore +
+        heuristic(
+          neighborNode,
+          goalNode
         );
 
-        openSet.add(neighbor.id);
-      }
+      cameFrom.set(
+        neighbor.id,
+        current.id
+      );
+
+      gScore.set(
+        neighbor.id,
+        tentativeGScore
+      );
+
+      openHeap.push({
+        id: neighbor.id,
+        gScore: tentativeGScore,
+        fScore: neighborFScore,
+      });
     }
   }
 
   return [];
 }
 
-export function getRouteNodes(routeIds, graph) {
-  const nodeMap = buildNodeMap(graph.nodes ?? []);
+export function getRouteNodes(
+  routeIds,
+  graph
+) {
+  const nodeMap = buildNodeMap(
+    graph?.nodes ?? []
+  );
 
-  return routeIds.map((id) => nodeMap.get(id)).filter(Boolean);
+  return routeIds
+    .map((id) => nodeMap.get(id))
+    .filter(Boolean);
 }
