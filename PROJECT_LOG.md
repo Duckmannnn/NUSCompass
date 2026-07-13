@@ -1,6 +1,10 @@
-# Project Log
+# Project Log - NUSCompass
 
-This project log records the time spent, task descriptions, and contributions of each team member for NUSCompass Milestone 1.
+This project log records the time spent, task descriptions, and contributions of each team member for NUSCompass Milestone 1 and Milestone 2.
+
+---
+
+## Milestone 1: Technical Proof of Concept
 
 | Date       | Team Member | Task                                        | Description                                                                                                                                                                       | Time Spent | Status | Evidence / Link                                     |
 | ---------- | ----------- | ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------: | ------ | --------------------------------------------------- |
@@ -32,18 +36,82 @@ This project log records the time spent, task descriptions, and contributions of
 | 2026-06-01 | Tuấn        | Prepare video script ideas                  | Helped plan the video structure, including what route examples to show and how to explain the technical proof of concept clearly.                                                 |       1.0h | Done   | Video script                                        |
 | 2026-06-01 | Minh, Tuấn   | Final Milestone 1 demo check                | Checked that the app could demonstrate the main workflow: selecting a start location, selecting a destination, generating a route, switching floors, and showing the debug graph. |       1.0h | Done   | Demo run                                            |
 
+---
+
+## Milestone 2: Improve Product Usability & Documentation
+
+| Date       | Team Member | Task                                        | Description                                                                                                                                                                       | Time Spent | Status | Evidence / Link                                     |
+| ---------- | ----------- | ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------: | ------ | --------------------------------------------------- |
+| 2026-06-02 | Minh         | Research A* algorithm optimizations         | Studied advanced A* techniques including bidirectional search, hierarchical pathfinding, and heuristic tuning for indoor navigation scenarios.                                    |       2.5h | Done   | Research notes                                      |
+| 2026-06-02 | Tuấn        | Study React Context API                     | Learned how React Context works for global state management, including Provider/Consumer patterns and performance considerations.                                                 |       2.0h | Done   | React documentation                                 |
+| 2026-06-03 | Minh         | Refactor A* algorithm for performance       | Optimized the A* implementation with better priority queue handling and early termination logic to reduce route calculation time.                                                 |       3.0h | Done   | `src/utils/astar.js`                                |
+| 2026-06-03 | Tuấn        | Implement SearchBar component               | Built the SearchBar component with real-time search, debounce logic, and dropdown results display.                                                                                |       3.5h | Done   | `src/components/SearchBar.jsx`                      |
+| 2026-06-04 | Minh         | Design graph data structure improvements    | Redesigned the graph model to support multi-floor navigation more cleanly, including better node/edge organization and floor transition handling.                                 |       2.5h | Done   | `src/data/blockCData.js`                            |
+| 2026-06-04 | Tuấn        | Implement FloorSelector component           | Created the FloorSelector component with visual floor buttons, active state highlighting, and disabled state for floors without data.                                             |       2.5h | Done   | `src/components/FloorSelector.jsx`                  |
+| 2026-06-05 | Minh         | Add route persistence across floors         | Implemented logic to keep the route overlay visible when users switch between floors, including conditional rendering based on current floor.                                     |       3.0h | Done   | `src/components/FloorMap.jsx`                       |
+| 2026-06-05 | Tuấn        | Implement StepPanel component               | Built the StepPanel component to display step-by-step route directions with distance markers and floor transition instructions.                                                   |       3.0h | Done   | `src/components/StepPanel.jsx`                      |
+| 2026-06-06 | Minh         | Study SVG rendering techniques              | Researched best practices for SVG path rendering, coordinate systems, and dynamic styling for interactive maps.                                                                   |       2.0h | Done   | SVG documentation                                   |
+| 2026-06-06 | Tuấn        | Improve CSS styling and responsiveness      | Enhanced the app's visual design with better spacing, colors, typography, and mobile-responsive layouts.                                                                          |       3.5h | Done   | `src/styles/app.css`                                |
+| 2026-06-07 | Minh         | Implement route overlay rendering           | Created the SVG path rendering logic for the route overlay, including start/destination markers and floor transition indicators.                                                  |       3.0h | Done   | `src/components/FloorMap.jsx`                       |
+| 2026-06-07 | Tuấn        | Add search debounce and performance fix     | Implemented 300ms debounce on search input to prevent UI lag when typing quickly, improving overall search experience.                                                            |       2.0h | Done   | `src/components/SearchBar.jsx`                      |
+| 2026-06-08 | Minh         | Test multi-floor routing edge cases         | Conducted thorough testing of A* algorithm with various multi-floor scenarios, including same-floor, adjacent floors, and maximum distance routes.                                |       2.5h | Done   | Manual testing                                      |
+| 2026-06-08 | Tuấn        | Fix route sorting bug in NavigationScreen   | Identified and fixed critical bug where Route Overview panel displayed floors in dictionary order instead of actual travel direction. Updated sorting logic in NavigationScreen.jsx. |       2.5h | Done   | `src/screens/NavigationScreen.jsx`                  |
+| 2026-06-09 | Minh         | Study user experience best practices        | Researched UX principles for navigation apps, including clear visual hierarchy, intuitive controls, and helpful feedback mechanisms.                                              |       2.0h | Done   | UX research notes                                   |
+| 2026-06-09 | Tuấn        | Fix "Exploring" button state bug            | Fixed bug where "Exploring" button did not navigate back to HomeScreen when no destination was selected. Removed strict disabled condition and added proper navigation logic.     |       1.5h | Done   | `src/components/NavigationScreen.jsx`               |
+| 2026-06-10 | Minh         | Improve direction text generation           | Enhanced the natural language generation for step-by-step directions, adding clearer landmark references and more intuitive turn instructions.                                    |       2.5h | Done   | `src/utils/directions.js`                           |
+| 2026-06-10 | Tuấn        | Fix start/end floor detection bug           | Fixed bug where system failed to correctly identify starting floor. Changed logic to extract startFloor and endFloor directly from actual route graph nodes.                      |       2.0h | Done   | `src/screens/NavigationScreen.jsx`                  |
+| 2026-06-11 | Minh         | Create testing documentation                | Wrote comprehensive TESTING.md document with test strategy, test cases, and user testing results.                                                                                 |       3.0h | Done   | `TESTING.md`                                        |
+| 2026-06-11 | Tuấn        | Conduct user testing session 1              | Conducted first round of user testing with 3 NUS students, collecting feedback on usability, route accuracy, and overall experience.                                              |       2.5h | Done   | User feedback notes                                 |
+| 2026-06-12 | Minh         | Research design diagram tools               | Studied Mermaid.js and Draw.io for creating professional design diagrams (Use Case, Component, Data Flow) for documentation.                                                      |       2.0h | Done   | Tool documentation                                  |
+| 2026-06-12 | Tuấn        | Add "Current Floor" badge to UI             | Implemented prominent "Current Floor" badge and highlighted active floor button to help users know which floor they're viewing.                                                   |       2.0h | Done   | `src/components/FloorSelector.jsx`                  |
+| 2026-06-13 | Minh         | Create design architecture diagrams         | Added Use Case Diagram, Component Diagram, and Data Flow Diagram to README.md using Mermaid.js for automatic GitHub rendering.                                                    |       3.0h | Done   | `README.md`                                         |
+| 2026-06-13 | Tuấn        | Improve route direction clarity             | Enhanced step-by-step directions with clearer landmark references and more intuitive phrasing based on user testing feedback.                                                     |       2.5h | Done   | `src/utils/directions.js`                           |
+| 2026-06-14 | Minh         | Write design decisions documentation        | Documented technology choices (A* vs alternatives, React+Vite, inline styles, no database) with detailed justifications and trade-offs.                                           |       2.5h | Done   | `README.md`                                         |
+| 2026-06-14 | Tuấn        | Conduct user testing session 2              | Conducted second round of user testing with 5 NUS students, collecting quantitative ratings and qualitative feedback.                                                             |       3.0h | Done   | User testing results                                |
+| 2026-06-15 | Minh         | Create coding standards document            | Wrote CODING_STANDARD.md with naming conventions, code style guidelines, git commit format, and code review checklist.                                                            |       2.0h | Done   | `CODING_STANDARD.md`                                |
+| 2026-06-15 | Tuấn        | Refactor SearchBar for better UX            | Improved SearchBar component with better result highlighting, keyboard navigation support, and clearer empty state messages.                                                      |       2.5h | Done   | `src/components/SearchBar.jsx`                      |
+| 2026-06-16 | Minh         | Expand README documentation                 | Expanded README.md to 30+ pages with detailed feature descriptions, code snippets, usage guide, and future work sections.                                                         |       4.0h | Done   | `README.md`                                         |
+| 2026-06-16 | Tuấn        | Fix UI bugs from user feedback              | Fixed multiple UI issues identified in user testing, including button states, color contrast, and spacing problems.                                                               |       2.5h | Done   | Various component files                             |
+| 2026-06-17 | Minh         | Update project log                          | Updated PROJECT_LOG.md with detailed Milestone 2 progress, bug fixes, and team contributions.                                                                                     |       2.0h | Done   | `PROJECT_LOG.md`                                    |
+| 2026-06-17 | Tuấn        | Final UI polish and testing                 | Conducted final round of UI testing, fixed remaining visual issues, and ensured all components work together smoothly.                                                            |       2.5h | Done   | Manual testing                                      |
+| 2026-06-18 | Minh, Tuấn   | Final Milestone 2 demo preparation          | Prepared demo flow, tested all features end-to-end, and ensured app is ready for Milestone 2 submission.                                                                          |       2.0h | Done   | Demo run                                            |
+
+---
+
 ## Summary
 
+### Milestone 1
 For Milestone 1, the team focused on building a frontend-only proof of concept for indoor navigation inside Eusoff Block C.
 
 The main implemented feature is graph-based indoor route generation. Users can select their current location and destination, and the app computes a route using A* pathfinding. The route is rendered on a manually traced four-floor SVG map with room blocks, facilities, corridors, and stair transitions.
 
 A significant part of the milestone also involved learning and setting up the development workflow, including React, Vite, Git, GitHub, VS Code, local development commands, and frontend component structure.
 
-Tuấn mainly contributed through testing, reviewing the app flow, asking clarification questions, checking the repository setup, reviewing the map/UI, and helping prepare the poster and video explanation. This helped identify usability issues and made the proof of concept easier to present.
+**Minh** mainly contributed through project setup, A* algorithm implementation, graph data structure design, Block C map tracing, and core app integration.
+
+**Tuấn** mainly contributed through testing, reviewing the app flow, asking clarification questions, checking the repository setup, reviewing the map/UI, and helping prepare the poster and video explanation. This helped identify usability issues and made the proof of concept easier to present.
+
+### Milestone 2
+For Milestone 2, the team focused on improving product usability, fixing critical bugs, and creating comprehensive documentation to meet Apollo track requirements.
+
+**Key achievements:**
+- Fixed 3 critical bugs (route sorting, button states, floor detection)
+- Conducted 2 rounds of user testing with 8 total participants
+- Created comprehensive testing documentation (TESTING.md)
+- Added design architecture diagrams (Use Case, Component, Data Flow)
+- Expanded documentation to 30+ pages
+- Improved UI/UX based on user feedback
+
+**Minh** mainly contributed through A* algorithm optimization, route persistence implementation, design documentation, and comprehensive README expansion.
+
+**Tuấn** mainly contributed through implementing core UI components (SearchBar, FloorSelector, StepPanel), CSS styling improvements, bug fixes from user testing, and conducting user testing sessions. Tuấn's work significantly improved the app's usability and user experience.
+
+---
 
 ## Current Limitations
 
 The current floor-plan geometry is manually traced from available reference maps and is not yet perfectly accurate. Some room positions and facility blocks may still need refinement. The current milestone focuses on proving the core indoor navigation workflow rather than producing a fully polished production map.
 
 Future milestones will focus on improving map accuracy, refining directions, improving mobile usability, and expanding support to more buildings.
+
+---
