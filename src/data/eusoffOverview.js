@@ -1,99 +1,47 @@
-// src/data/eusoffOverview.js
+const VIEWBOX = {
+  width: 1440,
+  height: 1024,
+};
+
 export const eusoffOverview = {
-  viewBox: { width: 1000, height: 700 },
-  
+  viewBox: VIEWBOX,
   blocks: [
-    // Office - Top Left
     {
       id: 'OFFICE',
       name: 'Office',
-      x: 50,
-      y: 50,
-      width: 180,
-      height: 120,
-      rotation: -15,
-      floors: null,
       available: false,
-      color: '#6b7280',
+      path: 'M540 519H496L494 501.5H414V493.5H382.5L280.5 383.5L255 408L238.5 393.5L248 380.5L100 227.5L155 174L173 192L194 172.5L227.5 206.5L241.5 191.5L275.5 226L289 212L356.5 285.5L375.5 264.5L390.5 275L368 307.5L441.5 385H458.5V347H464.5L465.5 299.5H515.5V349H519L518 440L542.5 439L540 519Z',
     },
-    
-    // Block E - Top Center
     {
       id: 'E',
       name: 'Block E',
-      x: 550,
-      y: 40,
-      width: 140,
-      height: 160,
-      floors: 4,
       available: false,
-      color: '#9ca3af',
+      path: 'M913 500V472.5H901.5V483L840.5 482V417H811.5V401.5L843 400V362H858L859.5 259.5L813.5 258V242.5H793.5V250L741 248V262.5L602.5 258L601.5 306.5L640 306V331L720.5 333.5V309H752V337.5L771 356.5H796.5V377.5H773L772 418.5H793.5V428L717 426V434H705.5V491H750V486H791.5V533.5H827.5V557H871V509L832.5 508V498.5L913 500Z',
     },
-    
-    // Block A - Bottom Left
-    {
-      id: 'A',
-      name: 'Block A',
-      x: 150,
-      y: 350,
-      width: 140,
-      height: 180,
-      floors: 4,
-      available: false,
-      color: '#9ca3af',
-    },
-    
-    // Block B - Bottom Center-Left
-    {
-      id: 'B',
-      name: 'Block B',
-      x: 340,
-      y: 350,
-      width: 140,
-      height: 180,
-      floors: 4,
-      available: false,
-      color: '#9ca3af',
-    },
-    
-    // Block C - Bottom Center-Right (AVAILABLE!)
-    {
-      id: 'C',
-      name: 'Block C',
-      x: 530,
-      y: 350,
-      width: 160,
-      height: 180,
-      floors: 4,
-      available: true,
-      color: '#3b82f6',
-    },
-    
-    // Block D - Middle Right
     {
       id: 'D',
       name: 'Block D',
-      x: 740,
-      y: 220,
-      width: 140,
-      height: 160,
-      floors: 4,
       available: false,
-      color: '#9ca3af',
+      path: 'M952 532L1051.5 533.5V485.5H1064.5V413.5H1049L1055.5 183L1009 181V206.5H966.5V199.5H919V253H931.5V264H978.5L974 395H1002V425.5H975.5L956.5 444.5V470H936.5V444.5H913V518H949.5L952 532Z',
+    },
+    {
+      id: 'A',
+      name: 'Block A',
+      available: false,
+      path: 'M410 725.5V682.5V679H434V651.5H513V637L610.5 641.5V694.5H620L616 759.5H597.5L595.5 839.5H573.5V847.5L647.5 849.5V860H657.5L655 915H614L610.5 906.5H571L567 917.5C552.667 917 524 915.4 524 913V773H560.5V742.5H524V725.5H513V699.5H493V725.5H410Z',
+    },
+    {
+      id: 'B',
+      name: 'Block B',
+      available: false,
+      path: 'M679 881V825.5H692L694.5 815L767 819.5V807H742L745 769H722.5V697.5L735.5 696L738 645.5L838.5 649.5V663.5L896.5 667V696L913.5 697.5L915 667L973.5 669V700H989V727.5H973.5L972 745L853.5 742L855 711.5L834 710.5L832.5 738.5L814 754.5H786.5V786.5H815V870L722.5 866.5V881H679Z',
+    },
+    {
+      id: 'C',
+      name: 'Block C',
+      available: true,
+      floors: 4,
+      path: 'M991.636 763V684L1075.14 686.5L1073.14 716L1093.14 718.5V693L1115.14 671.5L1141.14 674.5V641H1111.14L1115.14 521.5H1193.14L1204.14 509.5H1251.14V565.5H1237.64V574H1189.64L1188.14 662H1200.14V710.5C1200.14 710.9 1205.47 710.667 1208.14 710.5V731.5L1189.64 734L1188.14 780L1088.64 777.5V763H991.636Z',
     },
   ],
-  
-  connections: [
-    { from: 'A', to: 'B', x1: 290, y1: 440, x2: 340, y2: 440 },
-    { from: 'B', to: 'C', x1: 480, y1: 440, x2: 530, y2: 440 },
-    { from: 'C', to: 'D', x1: 690, y1: 400, x2: 740, y2: 340 },
-    { from: 'D', to: 'E', x1: 740, y1: 260, x2: 690, y2: 200 },
-    { from: 'B', to: 'E', x1: 410, y1: 350, x2: 600, y2: 200 },
-  ],
-  
-  landmarks: [
-    { id: 'bus', name: 'Bus Stop', x: 100, y: 620, icon: '🚌' },
-    { id: 'temasek', name: 'Temasek', x: 920, y: 400, icon: '🚪' },
-    { id: 'mpc', name: 'MPC Gate', x: 620, y: 10, icon: '🚗' },
-  ],
-};  
+};
