@@ -1,175 +1,265 @@
-// src/screens/HomeScreen.jsx
-import { useState, useEffect, useMemo } from 'react';
+import {
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
+
+import OverviewMap from '../components/map/OverviewMap';
 import { useNavigation } from '../context/NavigationContext';
 import { roomsData } from '../data/blockCData';
-import OverviewMap from '../components/map/OverviewMap';
+
+function SearchIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      className="overview-search-icon"
+    >
+      <circle cx="11" cy="11" r="6.5" />
+      <path d="m16 16 4 4" />
+    </svg>
+  );
+}
+
+function getDestinationName(destination) {
+  return (
+    destination.displayName ??
+    destination.name ??
+    destination.label ??
+    destination.id
+  );
+}
 
 export default function HomeScreen() {
   const {
     highlightedRoomId,
     selectBlock,
-    selectRoom,
     selectFloor,
+    selectRoom,
     navigateTo,
     setHighlightedRoom,
   } = useNavigation();
 
-  const [searchQuery, setSearchQuery] = useState('');
-  const [debouncedQuery, setDebouncedQuery] = useState('');
+  const [searchQuery, setSearchQuery] =
+    useState('');
 
-  // Debounce search input (300ms)
+  const [debouncedQuery, setDebouncedQuery] =
+    useState('');
+
   useEffect(() => {
-    const timer = setTimeout(() => setDebouncedQuery(searchQuery), 300);
-    return () => clearTimeout(timer);
+    const previousBodyOverflow =
+      document.body.style.overflow;
+
+    const previousHtmlOverflow =
+      document.documentElement.style.overflow;
+
+    const previousOverscroll =
+      document.body.style.overscrollBehavior;
+
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow =
+      'hidden';
+    document.body.style.overscrollBehavior =
+      'none';
+
+    return () => {
+      document.body.style.overflow =
+        previousBodyOverflow;
+
+      document.documentElement.style.overflow =
+        previousHtmlOverflow;
+
+      document.body.style.overscrollBehavior =
+        previousOverscroll;
+    };
+  }, []);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setDebouncedQuery(searchQuery);
+    }, 220);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
   }, [searchQuery]);
 
-  // Handle block selection from overview map
-  const handleSelectBlock = (blockId) => {
-    selectBlock(blockId);
-    // Auto navigate to explore after a short delay
-    setTimeout(() => {
-      navigateTo('explore');
-    }, 300);
-  };
+  const filteredDestinations = useMemo(() => {
+    const query =
+      debouncedQuery.trim().toLowerCase();
 
-  // Handle search result click
-  const handleSearchResultClick = (room) => {
-    setHighlightedRoom(room.id);
+    if (!query) {
+      return [];
+    }
 
-    setTimeout(() => {
-      selectFloor(room.floor);
-      selectRoom(room);
-      navigateTo('explore');
-    }, 500);
-  };
+    return roomsData
+      .filter((destination) => {
+        const searchableText = [
+          destination.id,
+          destination.name,
+          destination.displayName,
+          destination.label,
+          destination.type,
+          destination.building,
+        ]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase();
 
-  // Filter rooms based on search query
-  const filteredRooms = useMemo(() => {
-    if (!debouncedQuery) return [];
-    const query = debouncedQuery.toLowerCase();
-    return roomsData.filter(room =>
-      room.name.toLowerCase().includes(query) ||
-      room.displayName.toLowerCase().includes(query)
-    ).slice(0, 5);
+        return searchableText.includes(query);
+      })
+      .slice(0, 7);
   }, [debouncedQuery]);
 
-  return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      padding: '20px',
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center'
-    }}>
-      {/* Header */}
-      <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-        <h1 style={{
-          fontSize: '36px', fontWeight: 'bold', color: 'white',
-          margin: '0 0 5px 0', textShadow: '2px 2px 4px rgba(0,0,0,0.2)'
-        }}>
-          NUScompass
-        </h1>
-        <p style={{ fontSize: '16px', color: 'rgba(255,255,255,0.9)', margin: 0 }}>
-          Navigate Eusoff Hall with ease
-        </p>
-      </div>
+  const handleSelectBlock = (blockId) => {
+    selectBlock(blockId);
+    navigateTo('explore');
+  };
 
-      {/* Search */}
-      <div style={{ width: '100%', maxWidth: '600px', marginBottom: '20px' }}>
-        <input
-          type="text"
-          placeholder="Search rooms or places in Eusoff.."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          style={{
-            width: '100%', padding: '14px 20px', fontSize: '16px',
-            border: 'none', borderRadius: '12px',
-            boxShadow: '0 4px 6px rgba(0,0,0,0.1)', outline: 'none'
-          }}
+  const handleSearchResultClick = (
+    destination
+  ) => {
+    const blockId =
+      destination.blockId ??
+      destination.block ??
+      'C';
+
+    setSearchQuery('');
+    setDebouncedQuery('');
+
+    selectBlock(blockId);
+    selectFloor(destination.floor);
+    setHighlightedRoom(destination.id);
+    selectRoom(destination);
+    navigateTo('explore');
+  };
+
+  const showSearchResults =
+    debouncedQuery.trim().length > 0;
+
+  return (
+    <div className="overview-shell">
+      <header className="overview-topbar">
+        <div className="overview-brand">
+          <div
+            className="overview-brand-mark"
+            aria-hidden="true"
+          >
+            NC
+          </div>
+
+          <div className="overview-brand-copy">
+            <strong>NUSCompass</strong>
+            <span>Eusoff Hall navigation</span>
+          </div>
+        </div>
+
+        <div className="overview-location">
+          <span>Campus overview</span>
+          <strong>Eusoff Hall</strong>
+        </div>
+
+        <div className="overview-search">
+          <SearchIcon />
+
+          <input
+            type="search"
+            value={searchQuery}
+            onChange={(event) =>
+              setSearchQuery(event.target.value)
+            }
+            placeholder="Search room or facility"
+            aria-label="Search room or facility"
+            autoComplete="off"
+          />
+
+          {showSearchResults && (
+            <div className="overview-search-results">
+              {filteredDestinations.length > 0 ? (
+                filteredDestinations.map(
+                  (destination) => {
+                    const isHighlighted =
+                      highlightedRoomId ===
+                      destination.id;
+
+                    return (
+                      <button
+                        key={destination.id}
+                        type="button"
+                        className={[
+                          'overview-search-result',
+                          isHighlighted
+                            ? 'active'
+                            : '',
+                        ].join(' ')}
+                        onClick={() =>
+                          handleSearchResultClick(
+                            destination
+                          )
+                        }
+                      >
+                        <span className="overview-result-symbol">
+                          {destination.type ===
+                          'facility'
+                            ? 'F'
+                            : 'R'}
+                        </span>
+
+                        <span className="overview-result-copy">
+                          <strong>
+                            {getDestinationName(
+                              destination
+                            )}
+                          </strong>
+
+                          <small>
+                            Block C · Floor{' '}
+                            {destination.floor}
+                          </small>
+                        </span>
+
+                        <span
+                          className="overview-result-arrow"
+                          aria-hidden="true"
+                        >
+                          →
+                        </span>
+                      </button>
+                    );
+                  }
+                )
+              ) : (
+                <div className="overview-search-empty">
+                  No matching destinations
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </header>
+
+      <main className="overview-workspace">
+        <OverviewMap
+          onSelectBlock={handleSelectBlock}
         />
 
-        {/* Search results */}
-        {debouncedQuery && filteredRooms.length > 0 && (
-          <div style={{
-            marginTop: '10px', backgroundColor: 'white',
-            borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-            overflow: 'hidden'
-          }}>
-            {filteredRooms.map(room => {
-              const isHighlighted = highlightedRoomId === room.id;
-              return (
-                <div
-                  key={room.id}
-                  onClick={() => handleSearchResultClick(room)}
-                  style={{
-                    padding: '15px 20px',
-                    borderBottom: '1px solid #f3f4f6',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s',
-                    backgroundColor: isHighlighted ? '#dbeafe' : 'white',
-                    boxShadow: isHighlighted ? '0 0 20px rgba(59, 130, 246, 0.6)' : 'none',
-                    transform: isHighlighted ? 'scale(1.02)' : 'scale(1)',
-                    borderRadius: isHighlighted ? '8px' : '0',
-                    animation: isHighlighted ? 'glowBlue 1s ease-in-out infinite' : 'none',
-                    border: isHighlighted ? '2px solid #3b82f6' : 'none',
-                  }}
-                  onMouseOver={e => { if (!isHighlighted) e.currentTarget.style.backgroundColor = '#f9fafb'; }}
-                  onMouseOut={e => { if (!isHighlighted) e.currentTarget.style.backgroundColor = 'white'; }}
-                >
-                  <div style={{ fontWeight: 'bold', color: '#1f2937' }}>{room.name}</div>
-                  <div style={{ fontSize: '14px', color: '#6b7280' }}>
-                    Floor {room.floor} · {room.type}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
+        <div className="overview-map-legend">
+          <span>
+            <i className="mapped" />
+            Mapped block
+          </span>
 
-      {/* Overview Map */}
-      <div style={{
-        width: '100%',
-        maxWidth: '900px',
-        backgroundColor: 'white',
-        borderRadius: '16px',
-        padding: '20px',
-        boxShadow: '0 10px 25px rgba(0,0,0,0.2)',
-        marginBottom: '20px'
-      }}>
-        <OverviewMap onSelectBlock={handleSelectBlock} />
-      </div>
+          <span>
+            <i className="unmapped" />
+            Not mapped
+          </span>
 
-      {/* Legend */}
-      <div style={{
-        display: 'flex',
-        gap: '20px',
-        flexWrap: 'wrap',
-        justifyContent: 'center',
-        color: 'rgba(255,255,255,0.9)',
-        fontSize: '14px'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div style={{ width: '16px', height: '16px', backgroundColor: '#3b82f6', borderRadius: '4px' }} />
-          <span>Available</span>
+          <span>
+            <i className="campus-path" />
+            Campus path
+          </span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div style={{ width: '16px', height: '16px', backgroundColor: '#9ca3af', borderRadius: '4px', opacity: 0.7 }} />
-          <span>Coming Soon</span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div style={{ width: '16px', height: '16px', backgroundColor: '#10b981', borderRadius: '50%' }} />
-          <span>Connection</span>
-        </div>
-      </div>
-
-      <style>{`
-        @keyframes glowBlue {
-          0%, 100% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.6); transform: scale(1.02); }
-          50%       { box-shadow: 0 0 35px rgba(59, 130, 246, 1);   transform: scale(1.05); }
-        }
-      `}</style>
+      </main>
     </div>
   );
 }

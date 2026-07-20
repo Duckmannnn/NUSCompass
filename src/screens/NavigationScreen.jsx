@@ -59,6 +59,7 @@ export default function NavigationScreen() {
   }, [setStartRoom]);
 
   const handleSelectDestRoom = useCallback((room) => {
+    setLocalError(null);
     selectRoom(room);
     setShowDestSearch(false);
     setDestSearchQuery('');
@@ -94,8 +95,8 @@ export default function NavigationScreen() {
         };
       }
 
-      let action = '';
-      let stepType = 'walk';
+      let action;
+      let stepType;
       
       if (edge.type === 'stairs') {
         action = currentNode.floor < nextNode.floor
@@ -138,7 +139,7 @@ export default function NavigationScreen() {
     const descriptions = {};
     
     Object.values(stepsByFloor).forEach(floorData => {
-      let description = '';
+      let description;
       
       if (floorData.hasStairs) {
         const stepsBeforeStairs = floorData.steps.filter(s => s.stepType !== 'stairs');
@@ -187,7 +188,7 @@ export default function NavigationScreen() {
     } else {
       return floors.sort((a, b) => a - b); // Ascending: 1, 2, 3, 4
     }
-  }, [stepsByFloor, route, graph.nodes]);
+  }, [stepsByFloor, route]);
 
   const currentIndex = floorList.indexOf(currentFloor);
   const prevFloor = currentIndex > 0 ? floorList[currentIndex - 1] : null;
@@ -239,12 +240,7 @@ export default function NavigationScreen() {
     }
   }, [route, currentStepIndex, selectFloor]);
 
-  useEffect(() => {
-    if (localError && destinationRoomId) setLocalError(null);
-  }, [destinationRoomId, localError]);
-
   // ── Derived UI values ──────────────────────────────────────────────────
-  const isButtonDisabled = isCalculating || (route.length > 0 && currentStepIndex >= route.length - 1);
   const displayError = routeError || localError;
   const hasRoute = route.length > 0;
 

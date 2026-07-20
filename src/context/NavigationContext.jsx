@@ -102,7 +102,8 @@ export function NavigationProvider({ children }) {
         setRouteError('No path found between the selected rooms.');
       }
     } catch (err) {
-      setRouteError('Failed to calculate route. Please try again.');
+      console.error(err);
+      setRouteError('Unable to calculate route');
     } finally {
       setIsCalculating(false);
     }
@@ -143,7 +144,7 @@ export function NavigationProvider({ children }) {
 
   return (
     <NavigationContext.Provider value={value}>
-      {children}
+      {children}  
     </NavigationContext.Provider>
   );
 }
