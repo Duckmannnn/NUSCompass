@@ -7,6 +7,7 @@ import {
 import OverviewMap from '../components/map/OverviewMap';
 import { useNavigation } from '../context/NavigationContext';
 import { roomsData } from '../data/blockCData';
+import { filterQuickDestinations } from '../data/quickDestinations';
 
 function SearchIcon() {
   return (
@@ -38,6 +39,7 @@ export default function HomeScreen() {
     selectRoom,
     navigateTo,
     setHighlightedRoom,
+    selectDestinationIntent,
   } = useNavigation();
 
   const [searchQuery, setSearchQuery] =
@@ -45,6 +47,9 @@ export default function HomeScreen() {
 
   const [debouncedQuery, setDebouncedQuery] =
     useState('');
+
+  const [isSearchFocused, setIsSearchFocused] =
+    useState(false);
 
   useEffect(() => {
     const previousBodyOverflow =
@@ -111,6 +116,11 @@ export default function HomeScreen() {
       .slice(0, 7);
   }, [debouncedQuery]);
 
+  const quickDestinations = useMemo(
+    () => filterQuickDestinations(debouncedQuery),
+    [debouncedQuery]
+  );
+
   const handleSelectBlock = (blockId) => {
     selectBlock(blockId);
     navigateTo('explore');
@@ -131,11 +141,21 @@ export default function HomeScreen() {
     selectFloor(destination.floor);
     setHighlightedRoom(destination.id);
     selectRoom(destination);
+    setIsSearchFocused(false);
     navigateTo('explore');
   };
 
+  const handleQuickDestinationClick = (destination) => {
+    selectDestinationIntent(destination);
+    setSearchQuery('');
+    setDebouncedQuery('');
+    setIsSearchFocused(false);
+    navigateTo('navigation');
+  };
+
   const showSearchResults =
-    debouncedQuery.trim().length > 0;
+    isSearchFocused &&
+    (quickDestinations.length > 0 || debouncedQuery.trim().length > 0);
 
   return (
     <div className="overview-shell">
@@ -168,6 +188,10 @@ export default function HomeScreen() {
             onChange={(event) =>
               setSearchQuery(event.target.value)
             }
+            onFocus={() => setIsSearchFocused(true)}
+            onBlur={() => {
+              window.setTimeout(() => setIsSearchFocused(false), 120);
+            }}
             placeholder="Search room or facility"
             aria-label="Search room or facility"
             autoComplete="off"
@@ -175,64 +199,62 @@ export default function HomeScreen() {
 
           {showSearchResults && (
             <div className="overview-search-results">
-              {filteredDestinations.length > 0 ? (
-                filteredDestinations.map(
-                  (destination) => {
-                    const isHighlighted =
-                      highlightedRoomId ===
-                      destination.id;
-
-                    return (
-                      <button
-                        key={destination.id}
-                        type="button"
-                        className={[
-                          'overview-search-result',
-                          isHighlighted
-                            ? 'active'
-                            : '',
-                        ].join(' ')}
-                        onClick={() =>
-                          handleSearchResultClick(
-                            destination
-                          )
-                        }
-                      >
-                        <span className="overview-result-symbol">
-                          {destination.type ===
-                          'facility'
-                            ? 'F'
-                            : 'R'}
-                        </span>
-
-                        <span className="overview-result-copy">
-                          <strong>
-                            {getDestinationName(
-                              destination
-                            )}
-                          </strong>
-
-                          <small>
-                            Block C · Floor{' '}
-                            {destination.floor}
-                          </small>
-                        </span>
-
-                        <span
-                          className="overview-result-arrow"
-                          aria-hidden="true"
-                        >
-                          →
-                        </span>
-                      </button>
-                    );
-                  }
-                )
-              ) : (
-                <div className="overview-search-empty">
-                  No matching destinations
-                </div>
+              {quickDestinations.length > 0 && (
+                <>
+                  <div className="overview-search-empty">
+                    Quick destinations
+                  </div>
+                  {quickDestinations.map((destination) => (
+                    <button
+                      key={destination.id}
+                      type="button"
+                      className="overview-search-result"
+                      onClick={() => handleQuickDestinationClick(destination)}
+                    >
+                      <span className="overview-result-symbol">Q</span>
+                      <span className="overview-result-copy">
+                        <strong>{destination.label}</strong>
+                        <small>Uses your starting point</small>
+                      </span>
+                      <span className="overview-result-arrow" aria-hidden="true">→</span>
+                    </button>
+                  ))}
+                </>
               )}
+
+              {debouncedQuery.trim().length > 0 &&
+                filteredDestinations.map((destination) => {
+                  const isHighlighted = highlightedRoomId === destination.id;
+
+                  return (
+                    <button
+                      key={destination.id}
+                      type="button"
+                      className={[
+                        'overview-search-result',
+                        isHighlighted ? 'active' : '',
+                      ].join(' ')}
+                      onClick={() => handleSearchResultClick(destination)}
+                    >
+                      <span className="overview-result-symbol">
+                        {destination.type === 'facility' ? 'F' : 'R'}
+                      </span>
+                      <span className="overview-result-copy">
+                        <strong>{getDestinationName(destination)}</strong>
+                        <small>Block C · Floor {destination.floor}</small>
+                      </span>
+                      <span className="overview-result-arrow" aria-hidden="true">→</span>
+                    </button>
+                  );
+                })}
+
+              {debouncedQuery.trim().length > 0 &&
+                quickDestinations.length === 0 &&
+                filteredDestinations.length === 0 && (
+                  <div className="overview-search-empty">
+                    No matching destinations
+                  </div>
+                )}
             </div>
           )}
         </div>

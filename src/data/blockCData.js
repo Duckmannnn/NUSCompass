@@ -44,9 +44,10 @@ function getDoorPoint(x, y, width, height, side) {
   return { x: x + width, y: y + height / 2 };
 }
 
-function block({ id, label = id, floor, type, x, y, width, height, doorSide, zone }) {
+function block({ id, label = id, floor, type, x, y, width, height, doorSide, zone, ...extra }) {
   return {
     id, label, floor, type, x, y, width, height, doorSide, zone,
+    ...extra,
     door: doorSide ? getDoorPoint(x, y, width, height, doorSide) : null,
     nodeId: doorSide ? `F${floor}-${id}-DOOR` : null,
   };
@@ -77,8 +78,8 @@ function room(
   });
 }
 
-function facility(id, label, floor, x, y, width, height, doorSide, zone) {
-  return block({ id, label, floor, type: 'facility', x, y, width, height, doorSide, zone });
+function facility(id, label, floor, x, y, width, height, doorSide, zone, extra = {}) {
+  return block({ id, label, floor, type: 'facility', x, y, width, height, doorSide, zone, ...extra });
 }
 
 function special(id, label, floor, x, y, width, height, doorSide = null, zone = null) {
@@ -224,7 +225,7 @@ function makeFloor1Layout() {
     ],
     facilities: [
       facility('F1-EW',      'EW Room',     1, 879, 421, 88,  55,  'left', 'temasek-right'),
-      facility('F1-TOILET',  'Toilet',      1, 879, 476, 145, 161, 'left', 'temasek-right'),
+      facility('F1-TOILET',  'Toilet',      1, 879, 476, 145, 161, 'left', 'temasek-right', { toiletGender: 'male' }),
       facility('F1-LAUNDRY', 'Laundry',     1, 793, 735, 131, 133, 'top',  'lower'),
       facility('F1-DRYING',  'Drying Yard', 1, 924, 735, 159, 133, 'top',  'lower'),
     ],
@@ -248,7 +249,7 @@ function makeFloor2Layout() {
     ],
     facilities: [
       facility('F2-KITCHEN', 'Kitchen', 2, 704, 421, 91,  104, 'right', 'connector-left'),
-      facility('F2-TOILET',  'Toilet',  2, 879, 421, 145, 161, 'left',  'temasek-right'),
+      facility('F2-TOILET',  'Toilet',  2, 879, 421, 145, 161, 'left',  'temasek-right', { toiletGender: 'female' }),
     ],
     specials: [special('F2-ROOF', 'Roof', 2, 879, 38, 231, 182)],
     stairs: makeCommonStairs(2),
@@ -270,7 +271,7 @@ function makeFloor3Layout() {
     ],
     facilities: [
       facility('F3-LOUNGE', 'Lounge', 3, 704, 421, 91,  104, 'right', 'connector-left'),
-      facility('F3-TOILET', 'Toilet', 3, 879, 421, 145, 161, 'left',  'temasek-right'),
+      facility('F3-TOILET', 'Toilet', 3, 879, 421, 145, 161, 'left',  'temasek-right', { toiletGender: 'female' }),
     ],
     specials: [],
     stairs: makeCommonStairs(3),
@@ -292,7 +293,7 @@ function makeFloor4Layout() {
     ],
     facilities: [
       facility('F4-BALCONY', 'Balcony', 4, 704, 421, 91,  104, 'right', 'connector-left'),
-      facility('F4-TOILET',  'Toilet',  4, 879, 421, 145, 161, 'left',  'temasek-right'),
+      facility('F4-TOILET',  'Toilet',  4, 879, 421, 145, 161, 'left',  'temasek-right', { toiletGender: 'male' }),
     ],
     specials: [],
     stairs: makeCommonStairs(4),
@@ -464,6 +465,7 @@ function makeRoomsData(layouts) {
         floor: item.floor,
         type: item.type,
         nodeId: item.nodeId,
+        toiletGender: item.toiletGender ?? null,
         displayPoint: { x: item.x + item.width / 2, y: item.y + item.height / 2 },
       };
     });

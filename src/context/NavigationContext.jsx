@@ -1,6 +1,7 @@
 import { createContext, useState, useContext, useMemo, useCallback } from 'react';
 import { roomsData, graph } from '../data/blockCData';
 import { astar } from '../utils/astar'; // ← STATIC IMPORT
+import { findNearestToilet } from '../utils/findNearestDestination';
 
 const NavigationContext = createContext();
 
@@ -14,6 +15,7 @@ export function NavigationProvider({ children }) {
   const [activeCard, setActiveCard] = useState(null);
   const [startRoomId, setStartRoomId] = useState(null);
   const [destinationRoomId, setDestinationRoomId] = useState(null);
+  const [destinationIntent, setDestinationIntent] = useState(null);
   const [route, setRoute] = useState([]);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [isCalculating, setIsCalculating] = useState(false);
@@ -51,6 +53,7 @@ export function NavigationProvider({ children }) {
   }, []);
 
   const selectRoom = useCallback((room) => {
+    setDestinationIntent(null);
     setSelectedRoom(room);
     setCurrentFloor(room.floor);
     setHighlightedRoomId(room.id);
@@ -71,6 +74,26 @@ export function NavigationProvider({ children }) {
 
   const setStartRoom = useCallback((roomId) => {
     setStartRoomId(roomId);
+    if (destinationIntent) {
+      setDestinationRoomId(null);
+      setSelectedRoom(null);
+    }
+    setRoute([]);
+    setCurrentStepIndex(0);
+    setRouteError(null);
+  }, [destinationIntent]);
+
+  const selectDestinationIntent = useCallback((intent) => {
+    if (
+      intent?.type !== 'nearest-toilet' ||
+      !['male', 'female'].includes(intent.toiletGender)
+    ) {
+      return;
+    }
+
+    setDestinationIntent(intent);
+    setDestinationRoomId(null);
+    setSelectedRoom(null);
     setRoute([]);
     setCurrentStepIndex(0);
     setRouteError(null);
@@ -78,12 +101,19 @@ export function NavigationProvider({ children }) {
 
   // Run A* pathfinding — NOW USING STATIC IMPORT
   const calculateRoute = useCallback(() => {
-    if (!startRoomId || !destinationRoomId) return;
+    if (!startRoomId) {
+      setRouteError('Select a starting point first.');
+      return;
+    }
+
+    if (!destinationRoomId && !destinationIntent) {
+      setRouteError('Select a destination first.');
+      return;
+    }
 
     const startRoom = roomsData.find(r => r.id === startRoomId);
-    const destRoom = roomsData.find(r => r.id === destinationRoomId);
 
-    if (!startRoom?.nodeId || !destRoom?.nodeId) {
+    if (!startRoom?.nodeId) {
       setRouteError('Selected rooms are not connected to the navigation graph.');
       return;
     }
@@ -92,9 +122,38 @@ export function NavigationProvider({ children }) {
     setRouteError(null);
 
     try {
+      if (destinationIntent) {
+        const result = findNearestToilet({
+          startRoomId,
+          toiletGender: destinationIntent.toiletGender,
+          rooms: roomsData,
+          graph,
+        });
+
+        if (!result) {
+          setRoute([]);
+          setRouteError('No reachable toilet found.');
+          return;
+        }
+
+        setSelectedRoom(result.destination);
+        setDestinationRoomId(result.destination.id);
+        setRoute(result.route);
+        setCurrentStepIndex(0);
+        setCurrentFloor(startRoom.floor);
+        return;
+      }
+
+      const destRoom = roomsData.find(r => r.id === destinationRoomId);
+
+      if (!destRoom?.nodeId) {
+        setRouteError('Selected rooms are not connected to the navigation graph.');
+        return;
+      }
+
       const newRoute = astar(startRoom.nodeId, destRoom.nodeId, graph);
 
-      if (newRoute && newRoute.length > 0) {
+      if (newRoute.length > 0) {
         setRoute(newRoute);
         setCurrentStepIndex(0);
         setCurrentFloor(startRoom.floor);
@@ -103,11 +162,11 @@ export function NavigationProvider({ children }) {
       }
     } catch (err) {
       console.error(err);
-      setRouteError('Unable to calculate route');
+      setRouteError('Unable to calculate route.');
     } finally {
       setIsCalculating(false);
     }
-  }, [startRoomId, destinationRoomId]);
+  }, [startRoomId, destinationRoomId, destinationIntent]);
 
   const nextStep = useCallback(() => {
     setCurrentStepIndex((prev) => prev + 1);
@@ -116,6 +175,7 @@ export function NavigationProvider({ children }) {
   const resetNavigation = useCallback(() => {
     setStartRoomId(null);
     setDestinationRoomId(null);
+    setDestinationIntent(null);
     setRoute([]);
     setCurrentStepIndex(0);
     setRouteError(null);
@@ -126,19 +186,19 @@ export function NavigationProvider({ children }) {
   const value = useMemo(() => ({
     // State
     currentView, selectedBlock, currentFloor, selectedRoom, activeCard,
-    startRoomId, destinationRoomId, route, currentStepIndex,
+    startRoomId, destinationRoomId, destinationIntent, route, currentStepIndex,
     highlightedRoomId, isCalculating, routeError,
 
     // Actions
     navigateTo, selectBlock, startExplore, selectFloor, selectRoom,
-    startNavigation, setStartRoom, calculateRoute, nextStep, resetNavigation,
+    startNavigation, setStartRoom, selectDestinationIntent, calculateRoute, nextStep, resetNavigation,
     setHighlightedRoom, clearHighlightedRoom, setCurrentFloor,
   }), [
     currentView, selectedBlock, currentFloor, selectedRoom, activeCard,
-    startRoomId, destinationRoomId, route, currentStepIndex,
+    startRoomId, destinationRoomId, destinationIntent, route, currentStepIndex,
     highlightedRoomId, isCalculating, routeError,
     navigateTo, selectBlock, startExplore, selectFloor, selectRoom,
-    startNavigation, setStartRoom, calculateRoute, nextStep, resetNavigation,
+    startNavigation, setStartRoom, selectDestinationIntent, calculateRoute, nextStep, resetNavigation,
     setHighlightedRoom, clearHighlightedRoom,
   ]);
 
