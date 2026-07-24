@@ -2,12 +2,14 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigation } from '../context/NavigationContext';
 import { roomsData, graph } from '../data/blockCData';
+import { filterQuickDestinations } from '../data/quickDestinations';
 import MapCanvas from '../components/map/MapCanvas';
 
 export default function NavigationScreen() {
   const {
     startRoomId,
     destinationRoomId,
+    destinationIntent,
     route,
     currentStepIndex,
     currentFloor,
@@ -21,6 +23,7 @@ export default function NavigationScreen() {
     setStartRoom,
     selectFloor,
     selectRoom,
+    selectDestinationIntent,
   } = useNavigation();
 
   const [showStartSearch, setShowStartSearch] = useState(false);
@@ -51,8 +54,14 @@ export default function NavigationScreen() {
     [destSearchQuery]
   );
 
+  const quickDestinations = useMemo(
+    () => filterQuickDestinations(destSearchQuery),
+    [destSearchQuery]
+  );
+
   // ── Handlers ───────────────────────────────────────────────────────────
   const handleSelectStartRoom = useCallback((room) => {
+    setLocalError(null);
     setStartRoom(room.id);
     setShowStartSearch(false);
     setStartSearchQuery('');
@@ -64,6 +73,13 @@ export default function NavigationScreen() {
     setShowDestSearch(false);
     setDestSearchQuery('');
   }, [selectRoom]);
+
+  const handleSelectQuickDestination = useCallback((destination) => {
+    setLocalError(null);
+    selectDestinationIntent(destination);
+    setShowDestSearch(false);
+    setDestSearchQuery('');
+  }, [selectDestinationIntent]);
 
   // ── Group steps by floor (ONLY after route is calculated) ─────────────
   const stepsByFloor = useMemo(() => {
@@ -221,16 +237,25 @@ export default function NavigationScreen() {
 
   const handleSmartButton = useCallback(() => {
     if (!startRoomId) {
-      navigateTo('home'); // ← Về HomeScreen thay vì ExploreScreen
-    } else if (!destinationRoomId) {
-      setLocalError('Please select a destination first.');
+      navigateTo('home');
+    } else if (!destinationRoomId && !destinationIntent) {
+      setLocalError('Select a destination first.');
     } else if (route.length === 0) {
       setLocalError(null);
       calculateRoute();
     } else if (nextFloor) {
       handleNextFloor();
     }
-  }, [startRoomId, destinationRoomId, route.length, nextFloor, navigateTo, calculateRoute, handleNextFloor]);
+  }, [
+    startRoomId,
+    destinationRoomId,
+    destinationIntent,
+    route.length,
+    nextFloor,
+    navigateTo,
+    calculateRoute,
+    handleNextFloor,
+  ]);
 
   // ── Effects ───────────────────────────────────────────────────────────
   useEffect(() => {
@@ -246,8 +271,8 @@ export default function NavigationScreen() {
 
   const getButtonText = () => {
     if (isCalculating) return 'Calculating...';
-    if (!startRoomId) return 'Back to Home'; // ← Đổi từ 'Exploring' sang 'Back to Home'
-    if (!destinationRoomId) return 'Select destination';
+    if (!startRoomId) return 'Back to Home';
+    if (!destinationRoomId && !destinationIntent) return 'Select destination';
     if (route.length === 0) return 'Calculate route';
     if (currentStepIndex >= route.length - 1) return 'Arrived!';
     if (nextFloor) return `Go to Floor ${nextFloor}`;
@@ -379,12 +404,29 @@ export default function NavigationScreen() {
                     outline: 'none', boxSizing: 'border-box'
                   }}
                 />
-                {destSearchQuery && filteredDestRooms.length > 0 && (
+                {(quickDestinations.length > 0 || filteredDestRooms.length > 0) && (
                   <div style={{
                     marginTop: '8px', backgroundColor: 'white', borderRadius: '8px',
-                    boxShadow: '0 4px 6px rgba(0,0,0,0.1)', maxHeight: '200px',
+                    boxShadow: '0 4px 6px rgba(0,0,0,0.1)', maxHeight: '240px',
                     overflowY: 'auto', border: '1px solid #e5e7eb'
                   }}>
+                    {quickDestinations.length > 0 && (
+                      <div style={{ padding: '8px 15px', fontSize: '11px', fontWeight: '700', color: '#6b7280' }}>
+                        QUICK DESTINATIONS
+                      </div>
+                    )}
+                    {quickDestinations.map(destination => (
+                      <div
+                        key={destination.id}
+                        onClick={() => handleSelectQuickDestination(destination)}
+                        style={{ padding: '10px 15px', borderBottom: '1px solid #f3f4f6', cursor: 'pointer' }}
+                        onMouseOver={e => e.currentTarget.style.backgroundColor = '#f9fafb'}
+                        onMouseOut={e => e.currentTarget.style.backgroundColor = 'white'}
+                      >
+                        <div style={{ fontWeight: '600', color: '#1f2937' }}>{destination.label}</div>
+                        <div style={{ fontSize: '12px', color: '#6b7280' }}>Uses your starting point</div>
+                      </div>
+                    ))}
                     {filteredDestRooms.map(room => (
                       <div
                         key={room.id}
@@ -415,16 +457,33 @@ export default function NavigationScreen() {
                 onClick={() => setShowDestSearch(true)}
                 style={{
                   padding: '14px',
-                  backgroundColor: destinationRoom ? '#dbeafe' : '#f9fafb',
-                  border: `2px dashed ${destinationRoom ? '#3b82f6' : '#d1d5db'}`,
+                  backgroundColor: destinationIntent || destinationRoom ? '#dbeafe' : '#f9fafb',
+                  border: `2px dashed ${destinationIntent || destinationRoom ? '#3b82f6' : '#d1d5db'}`,
                   borderRadius: '10px', cursor: 'pointer',
                   fontSize: '16px', fontWeight: '600',
-                  color: destinationRoom ? '#1e40af' : '#6b7280'
+                  color: destinationIntent || destinationRoom ? '#1e40af' : '#6b7280'
                 }}
-                onMouseOver={e => { if (!destinationRoom) e.currentTarget.style.backgroundColor = '#f3f4f6'; }}
-                onMouseOut={e => { if (!destinationRoom) e.currentTarget.style.backgroundColor = '#f9fafb'; }}
+                onMouseOver={e => {
+                  if (!destinationIntent && !destinationRoom) e.currentTarget.style.backgroundColor = '#f3f4f6';
+                }}
+                onMouseOut={e => {
+                  if (!destinationIntent && !destinationRoom) e.currentTarget.style.backgroundColor = '#f9fafb';
+                }}
               >
-                {destinationRoom ? `🎯 ${destinationRoom.name} (Floor ${destinationRoom.floor})` : '+ Select destination'}
+                {destinationIntent ? (
+                  <>
+                    <div>{destinationIntent.label}</div>
+                    {destinationRoom && (
+                      <div style={{ marginTop: '4px', fontSize: '12px', fontWeight: '500', color: '#6b7280' }}>
+                        Resolved to {destinationRoom.name} · Floor {destinationRoom.floor}
+                      </div>
+                    )}
+                  </>
+                ) : destinationRoom ? (
+                  `${destinationRoom.name} (Floor ${destinationRoom.floor})`
+                ) : (
+                  '+ Select destination'
+                )}
               </div>
             )}
           </div>
