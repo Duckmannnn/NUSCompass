@@ -94,6 +94,7 @@ export function NavigationProvider({ children }) {
     setDestinationIntent(intent);
     setDestinationRoomId(null);
     setSelectedRoom(null);
+    setHighlightedRoomId(null);
     setRoute([]);
     setCurrentStepIndex(0);
     setRouteError(null);
@@ -138,6 +139,7 @@ export function NavigationProvider({ children }) {
 
         setSelectedRoom(result.destination);
         setDestinationRoomId(result.destination.id);
+        setHighlightedRoomId(result.destination.id);
         setRoute(result.route);
         setCurrentStepIndex(0);
         setCurrentFloor(startRoom.floor);
@@ -176,6 +178,8 @@ export function NavigationProvider({ children }) {
     setStartRoomId(null);
     setDestinationRoomId(null);
     setDestinationIntent(null);
+    setSelectedRoom(null);
+    setHighlightedRoomId(null);
     setRoute([]);
     setCurrentStepIndex(0);
     setRouteError(null);
