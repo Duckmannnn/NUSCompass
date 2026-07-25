@@ -71,9 +71,36 @@ export function findNearestToilet({ startRoomId, toiletGender, rooms, graph }) {
     room.nodeId
   );
 
+  if (!Number.isFinite(startRoom.floor)) {
+    return findNearestDestination({
+      startNodeId: startRoom.nodeId,
+      destinations: toilets,
+      graph,
+    });
+  }
+
+  const floorDistances = [...new Set(
+    toilets
+      .filter((toilet) => Number.isFinite(toilet.floor))
+      .map((toilet) => Math.abs(toilet.floor - startRoom.floor))
+  )].sort((first, second) => first - second);
+
+  for (const floorDistance of floorDistances) {
+    const result = findNearestDestination({
+      startNodeId: startRoom.nodeId,
+      destinations: toilets.filter((toilet) =>
+        Number.isFinite(toilet.floor) &&
+        Math.abs(toilet.floor - startRoom.floor) === floorDistance
+      ),
+      graph,
+    });
+
+    if (result) return result;
+  }
+
   return findNearestDestination({
     startNodeId: startRoom.nodeId,
-    destinations: toilets,
+    destinations: toilets.filter((toilet) => !Number.isFinite(toilet.floor)),
     graph,
   });
 }
