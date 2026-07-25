@@ -86,6 +86,25 @@ describe('nearest destination routing', () => {
     }).destination.id).toBe('WOMEN');
   });
 
+  it.each([
+    ['C318', 'male', 'F4-TOILET'],
+    ['C218', 'male', 'F1-TOILET'],
+    ['C116', 'female', 'F2-TOILET'],
+    ['C416', 'female', 'F3-TOILET'],
+  ])(
+    'prefers the nearest reachable floor from %s for %s toilets',
+    (startRoomId, toiletGender, expectedDestinationId) => {
+      const result = findNearestToilet({
+        startRoomId,
+        toiletGender,
+        rooms: roomsData,
+        graph,
+      });
+
+      expect(result.destination.id).toBe(expectedDestinationId);
+    }
+  );
+
   it('works with the real Block C graph', () => {
     const toilets = roomsData.filter((room) => room.name === 'Toilet');
     const genderById = Object.fromEntries(
@@ -113,8 +132,8 @@ describe('nearest destination routing', () => {
       graph,
     });
 
-    expect(['F1-TOILET', 'F4-TOILET']).toContain(male.destination.id);
-    expect(['F2-TOILET', 'F3-TOILET']).toContain(female.destination.id);
+    expect(male.destination.id).toBe('F4-TOILET');
+    expect(female.destination.id).toBe('F3-TOILET');
     expect(male.route[0]).toBe(roomsData.find((room) => room.id === 'C316').nodeId);
     expect(male.route.at(-1)).toBe(male.destination.nodeId);
     expect(female.route.at(-1)).toBe(female.destination.nodeId);
