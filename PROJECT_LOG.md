@@ -1,7 +1,7 @@
 # NUSCompass — Project Log
 
-> **Estimated active team effort: 272 hours**  
-> **Minh: 139 hours · Tuấn: 133 hours**
+> **Estimated active team effort: 282 hours**  
+> **Minh: 141 hours · Tuấn: 141 hours**
 
 This log includes implementation, design, research, code reading, debugging, testing, rework and documentation.
 
@@ -23,8 +23,8 @@ The hours are reconstructed estimates based on the project history and the team'
 | Overview map and interaction | 10h | 12h | 22h |
 | Multi-block experiment and architecture research | 6h | 6h | 12h |
 | Nearest toilets, CI, deployment and hotfixes | 10h | 4h | 14h |
-| Documentation, poster and video preparation | 6h | 6h | 12h |
-| **Total** | **139h** | **133h** | **272h** |
+| Documentation, poster, video and final demo preparation | 8h | 14h | 22h |
+| **Total** | **141h** | **141h** | **282h** |
 
 ---
 
@@ -572,18 +572,37 @@ clear destination, selected room and highlight together.
 
 ---
 
-# 13. Documentation, Poster and Video Preparation
+# 13. Documentation, Poster, Video and Final Demo Preparation
 
-**Time:** Minh 6h · Tuấn 6h
+**Period:** Late July 2026 — Milestone 3 close-out  
+**Time:** Minh 8h · Tuấn 14h
 
 | Member | Work | Time |
 |---|---|---:|
 | Minh | Audited commit history and current architecture | 2h |
 | Minh | Rewrote technical README | 3h |
 | Minh | Rebuilt the project log | 1h |
+| Minh | Reviewed the final poster, video script and slide deck for technical accuracy | 1h |
+| Minh | Re-tested the Milestone 3 demo flow and live deployment | 1h |
 | Tuấn | Reviewed technical explanations | 2h |
-| Tuấn | Planned poster structure | 2h |
-| Tuấn | Planned video and demo flow | 2h |
+| Tuấn | Planned the poster structure | 2h |
+| Tuấn | Planned the video and website-demo flow | 2h |
+| Tuấn | Designed and refined the final A1 poster, diagrams and print layout | 3h |
+| Tuấn | Designed and refined the final video slide deck and visual assets | 2h |
+| Tuấn | Rehearsed the website feature demonstration and prepared the recording sequence | 1.5h |
+| Tuấn | Prepared narration timing, transition notes and the final video assembly plan | 1.5h |
+
+## Milestone 3 presentation work
+
+The final presentation work included:
+
+- checking that poster and video claims matched the current implementation;
+- replacing outdated architecture and feature descriptions;
+- preparing the A1 poster for print export;
+- designing slides for the problem, A* overview, map-development process, reliability and future plans;
+- planning direct website demonstrations for zooming, dragging, floor exploration, room selection, room-to-room navigation and nearest-toilet routing;
+- aligning narration with website interactions, slides and technical evidence;
+- re-checking the live deployment before the final demonstration.
 
 Additional work documented elsewhere in the log:
 
@@ -619,7 +638,7 @@ Additional work documented elsewhere in the log:
 
 # 15. Final Contribution Summary
 
-## Minh — 139 hours
+## Minh — 141 hours
 
 - technical research;
 - A* and graph architecture;
@@ -628,9 +647,10 @@ Additional work documented elsewhere in the log:
 - bug root-cause analysis;
 - automated testing;
 - CI and deployment;
-- technical documentation.
+- technical documentation;
+- final poster, script and live-demo verification.
 
-## Tuấn — 133 hours
+## Tuấn — 141 hours
 
 - Figma floor-plan tracing;
 - Figma interactive prototyping;
@@ -642,9 +662,10 @@ Additional work documented elsewhere in the log:
 - bug reproduction;
 - usability review;
 - regression verification;
-- poster and video planning.
+- final A1 poster design;
+- video slide design, demo rehearsal and production planning.
 
-## Total — 272 hours
+## Total — 282 hours
 
 ```text
 Minh:
