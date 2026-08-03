@@ -10,6 +10,7 @@
 
 - [Idea and product direction](#1-idea-and-product-direction)
 - [Technical design](#2-technical-design)
+- [Informal user testing and feedback](#29-informal-user-testing-and-feedback)
 - [Development journey](#3-development-journey)
 - [Main challenges and lessons](#4-main-challenges-and-lessons)
 - [Team contributions](#team-contributions)
@@ -27,7 +28,7 @@
 | Graph model | Doors, corridor anchors, corridor spines, junctions and stairs |
 | Visual assets | Figma-traced floor plans and Eusoff overview SVG |
 | State management | React Context through `NavigationContext` |
-| Verification | Vitest, manual UI testing and GitHub Actions |
+| Verification | Vitest, Dijkstra comparison, manual UI walkthroughs, informal peer feedback and GitHub Actions |
 | Deployment | Vercel |
 | Project record | [`PROJECT_LOG.md`](./PROJECT_LOG.md) and Git history |
 
@@ -747,6 +748,206 @@ flowchart LR
     Merge --> Deploy
 ```
 
+## 2.9 Informal User Testing and Feedback
+
+NUSCompass was not developed only from the team's assumptions. Working builds were shared at selected stages with two external peers, and the team also carried out repeated internal walkthroughs after major map, routing and interface changes.
+
+This was **informal qualitative testing**, not a controlled usability experiment. The external reviewers were not presented as a representative sample of all NUS students, and the project did not collect statistically meaningful completion-time or satisfaction data. Their comments were instead used as practical design input and checked against issues that the team could reproduce in the application.
+
+The feedback below is paraphrased rather than quoted as a formal survey transcript.
+
+### 2.9.1 Testing approach
+
+The walkthroughs focused on three different questions:
+
+1. **Product idea:** Does room-level indoor navigation solve a problem that users recognise, and where could the idea be extended?
+2. **UI/UX:** Can a first-time user understand how to search, inspect a location, choose a starting point and follow a multi-floor route?
+3. **Implementation and reliability:** Does the route behave consistently, does the visual line match the walkable corridor, and can the project be tested and delivered reproducibly?
+
+The external and internal review sources were:
+
+| Review source | Stage | Main focus |
+|---|---|---|
+| Vietnam-based peer | Early working prototype | Overall concept, architecture and first-time-user convenience |
+| Malaysia-based peer | Later concept walkthrough | Product potential, scalability and repeated-route ideas |
+| Internal team walkthroughs | Throughout major iterations | Route geometry, map interaction, state consistency, floor transitions and regressions |
+| Internal development handoff review | Before final delivery | Installation, repeatable checks, CI and deployment readiness |
+
+### 2.9.2 Product-idea feedback
+
+The early external review was positive about the underlying idea and architecture. The Vietnam-based reviewer understood the value of routing beyond the building entrance and considered the technical direction reasonable. However, the reviewer also felt that the prototype still behaved more like a technical demonstration than a convenient product.
+
+This distinction influenced the team's priorities. Instead of treating A* as the finished product, the team shifted attention toward the complete user journey:
+
+```text
+find a destination
+    ↓
+inspect where it is
+    ↓
+choose “Navigate there”
+    ↓
+select a starting point
+    ↓
+calculate the route
+    ↓
+follow the route floor by floor
+```
+
+The later Malaysia-based review also described the project as having potential beyond a single demonstration block. One suggestion was to make better use of routes that many users request repeatedly.
+
+The current A* implementation does **not** learn or remember popular routes. A future version could instead add a cache or precomputed-route layer above A*:
+
+```text
+route request
+    ↓
+check whether a valid cached route exists
+    ├── yes → reuse it
+    └── no  → run A* and optionally cache the result
+```
+
+Such a cache would need invalidation rules whenever the graph, accessibility conditions or building data changed. A* would remain the fallback for new, uncommon or updated routes.
+
+The nearest-toilet feature also suggested a broader product direction. The same destination-intent pattern could later support practical facilities such as:
+
+- the nearest AED;
+- the nearest first-aid point;
+- the nearest fire extinguisher;
+- the nearest emergency exit;
+- the nearest accessible facility.
+
+These are future extensions only. They would require reliable facility-location data and should not be interpreted as features already implemented in the current prototype.
+
+### 2.9.3 UI/UX feedback
+
+The most important external UI/UX feedback from the early prototype was that the interface was **not yet convenient for a first-time user**. The reviewer could understand the architecture and overall goal, but the relationship between searching, inspecting a room and beginning navigation was not immediately obvious.
+
+That feedback aligned with the team's own walkthroughs. The original single-screen application exposed many controls at once and mixed exploration, route creation and route display in one place. As more features were added, the interface needed a clearer separation of responsibilities.
+
+The product response was the three-screen architecture:
+
+```text
+Home
+    → discover a block, room or quick destination
+
+Explore
+    → inspect floors, rooms and facilities on the map
+
+Navigation
+    → choose the start, calculate the route and follow guidance
+```
+
+Room and block information cards were also added so that selecting an item created a visible intermediate state instead of immediately forcing the user into route calculation. This supported the destination-first interaction: users could first confirm that they had selected the correct room, then choose to navigate there.
+
+Internal walkthroughs after the interactive overview was introduced found another class of UX issues. Zooming, dragging and direct map selection made the interface more useful, but also created interaction conflicts:
+
+- a drag could be interpreted as a click;
+- a selected destination could remain highlighted after cancellation;
+- a room card and the map could show inconsistent state;
+- changing screens or floors could leave outdated route information visible;
+- unavailable blocks needed a clear non-interactive state;
+- route calculation needed visible loading feedback;
+- multi-floor routes needed clearer staircase and floor-order cues.
+
+These observations led to changes including:
+
+- a drag-distance threshold and suppression of the click fired after dragging;
+- room and destination highlighting;
+- explicit mapped and unmapped block states;
+- shared state through `NavigationContext`;
+- more consistent overlay and reset behaviour;
+- floor-segmented route rendering;
+- staircase direction markers and ordered floor guidance;
+- clearer placeholders, button states and loading feedback.
+
+A recurring UX lesson was that **a graph-valid route is not automatically a user-readable route**. The line must begin at a recognisable room entrance, remain inside the visible corridor and clearly communicate where the user changes floors.
+
+### 2.9.4 Technical implementation, installation and reliability feedback
+
+Internal route walkthroughs exposed several implementation problems that were invisible when only a few demonstration routes were tested.
+
+The earliest renderer connected graph nodes with direct straight lines. A route could therefore be numerically correct while appearing to pass through a wall, a room or a toilet. This led to three major changes:
+
+1. manually traced Figma floor plans replaced approximate generated geometry;
+2. the graph was rebuilt around doors, corridor anchors, corridor spines, junctions and stairs;
+3. `edge.path` geometry was separated from numerical graph cost so that the SVG route could follow the encoded corridor.
+
+The nearest-toilet walkthrough revealed a different problem. The globally cheapest graph route could choose a toilet several floors away, even when a reachable toilet existed one floor away. The algorithm had followed its cost model, but the result did not match normal user expectations.
+
+The resolver was therefore changed to:
+
+```text
+nearest reachable floor first
+    ↓
+lowest route cost within that floor group
+```
+
+A regression test was then added so that later graph or routing changes would not silently reintroduce the same behaviour.
+
+The team also reviewed installation and handoff reliability. A feature working on one developer's machine was not considered sufficient evidence for delivery. The repository therefore standardised the local workflow around:
+
+```bash
+npm ci
+npm run lint
+npm test
+npm run build
+```
+
+GitHub Actions repeats these checks for pushes and pull requests, while Vercel provides a deployed build for demonstration. This reduced the risk that differences in local dependencies, generated files or untested merges would affect the final milestone submission.
+
+### 2.9.5 Feedback-to-change traceability
+
+The following table connects the main feedback and walkthrough observations to concrete project changes. External comments are separated from internal observations so that the README does not present team deductions as independent user-study results.
+
+| Stage and source | Feedback or observation | Response in the project | Evidence |
+|---|---|---|---|
+| Early internal route walkthrough | The route existed, but direct lines and approximate rooms made the map look like a graph visualiser rather than a real indoor plan. | Added routed edge paths, door nodes, corridor anchors and Figma-traced floor geometry. | [`f231ea4`](https://github.com/Duckmannnn/NUSCompass/commit/f231ea4327721aa2567a0b9332fe96deaedf5da2), [`68a7256`](https://github.com/Duckmannnn/NUSCompass/commit/68a72562e7f471498a7cce6c2c0a66aff1f05bfa), [`8207c66`](https://github.com/Duckmannnn/NUSCompass/commit/8207c661f027c1f5c8df5dae8dfe0860f12fdb02) |
+| Vietnam-based peer review | The architecture and idea were promising, but the UI did not yet feel convenient or self-explanatory. | Replaced the monolithic flow with Home, Explore and Navigation screens; added cards and clearer destination-first interaction. | [`d56f827`](https://github.com/Duckmannnn/NUSCompass/commit/d56f827bada6f5ef5337f424937c12e92540e76e), [`c1e0309`](https://github.com/Duckmannnn/NUSCompass/commit/c1e030947ab393112a61422e6056e7e5d8c9b90a), [`eda74c1`](https://github.com/Duckmannnn/NUSCompass/commit/eda74c14b4ee941ec0393662fb3354d163d977d4) |
+| Internal interactive-map walkthrough | Zooming and dragging were useful, but dragging could trigger selection and state could become inconsistent across overlays and screens. | Added drag-versus-click handling, mapped-block interaction, keyboard access, destination highlighting and shared navigation state. | [`cd37117`](https://github.com/Duckmannnn/NUSCompass/commit/cd37117c88fb6813fe485f6482a0793b631bf3b8), [`46d610b`](https://github.com/Duckmannnn/NUSCompass/commit/46d610bb6d9d67ff4ff3f27ff4a2c2c3d269b829) |
+| Internal UI and state review | Old highlights, unclear fallbacks, floor mismatches and overlays that did not close cleanly made the product feel unstable. | Improved reset logic, loading state, floor selection, card behaviour, placeholders and screen transitions. | [`9f42fed`](https://github.com/Duckmannnn/NUSCompass/commit/9f42fedbfb504bb46a311d20eb9cf881d20ec4d9), [`9439a6c`](https://github.com/Duckmannnn/NUSCompass/commit/9439a6c95b3316534d508e6853798149d4e46ec9), [`d99dcc8`](https://github.com/Duckmannnn/NUSCompass/commit/d99dcc8ee7d4bfa241b927d85618c63d95eec035) |
+| Internal multi-floor route review | A correct node route still needed a clear active floor, ordered transitions and recognisable staircase movement. | Split rendering and instructions by floor and added staircase direction markers. | [`46d610b`](https://github.com/Duckmannnn/NUSCompass/commit/46d610bb6d9d67ff4ff3f27ff4a2c2c3d269b829) |
+| Internal nearest-destination review | Global route cost selected a technically valid but unintuitive toilet floor. | Prioritised the nearest reachable floor before comparing candidates within that floor group. | [`79a1899`](https://github.com/Duckmannnn/NUSCompass/commit/79a18997e641799c3438e1790b33c83145dcddba) |
+| Malaysia-based peer review | The project had potential to scale, and frequently requested routes might be reused. | Recorded route caching or precomputation as future work; current A* remains stateless. | Future-work proposal, not a completed feature |
+| Internal delivery review | Manual demo routes alone were not enough to protect the project from regressions or machine-specific setup problems. | Added Vitest, Dijkstra comparison, deterministic route cases, lint restoration, CI and Vercel deployment. | [`0999352`](https://github.com/Duckmannnn/NUSCompass/commit/099935207510a60ba1e0af84344628405cf89e83), [`d6cfdb1`](https://github.com/Duckmannnn/NUSCompass/commit/d6cfdb172547acbf6365b4d16ff26bd1b31d1e7c), [`5040635`](https://github.com/Duckmannnn/NUSCompass/commit/5040635143472ad7cf21159c0803ece6f0ef968d), [`5e3d108`](https://github.com/Duckmannnn/NUSCompass/commit/5e3d10840318291df26e8286ec3f5ff690919d87) |
+
+### 2.9.6 What the feedback supports—and what it does not
+
+The informal feedback supports the following conclusions:
+
+- external reviewers could recognise the value and future potential of room-level indoor navigation;
+- the early interface needed a clearer workflow for first-time users;
+- repeated map and route walkthroughs uncovered real UI-state and visual-routing problems;
+- product-specific rules were necessary in addition to generic shortest-path logic;
+- reproducible tests and deployment checks improved implementation confidence.
+
+It does **not** support claims such as:
+
+- a verified usability score;
+- a measured percentage improvement;
+- a representative sample of NUS users;
+- a formal accessibility certification;
+- a proven reduction in navigation time;
+- evidence that every user would prefer the current route policy.
+
+A stronger future study should recruit a larger group of students, residents or visitors and ask each participant to complete the same tasks:
+
+1. locate a destination from a room code;
+2. identify its block and floor;
+3. inspect the destination on the map;
+4. generate a same-floor route;
+5. generate a multi-floor route and identify the required staircase;
+6. locate the nearest appropriate facility.
+
+The team could then record:
+
+- task-completion time;
+- incorrect selections and navigation errors;
+- whether assistance was required;
+- whether the correct floor transition was understood;
+- confidence before and after route generation;
+- qualitative comments about the map, cards and instructions.
+
+This would turn the current qualitative feedback into a repeatable usability evaluation while preserving the distinction between **informal peer review**, **internal walkthrough testing** and **formal user research**.
+
 ---
 
 # 3. Development Journey
@@ -1276,6 +1477,7 @@ NUSCompass is a technical proof of concept, not a production navigation service.
 - Instructions are derived from graph metadata rather than rich physical landmarks.
 - Adding a new building currently requires substantial manual visual and graph work.
 - The nearest-toilet resolver uses a deliberate floor-first product policy rather than global route cost alone.
+- External feedback was informal and limited to two peer reviewers; no controlled usability study has been completed yet.
 
 These limitations define the next technical direction:
 
@@ -1370,6 +1572,7 @@ C316 → nearest women's toilet
 
 ## Documentation and development evidence
 
+- [Informal user testing and feedback](#29-informal-user-testing-and-feedback)
 - [`PROJECT_LOG.md`](./PROJECT_LOG.md)
 - [Commit history](https://github.com/Duckmannnn/NUSCompass/commits/main)
 - [Pull requests](https://github.com/Duckmannnn/NUSCompass/pulls)
